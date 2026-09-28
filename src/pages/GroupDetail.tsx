@@ -192,9 +192,6 @@ export function GroupDetail({ id }: { id: number }) {
             <h1 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
               {group.name}
             </h1>
-            <p className="mt-1 text-[13px] text-white/75">
-              {facts.map(([, v]) => v).join(" · ") || "No profile yet."}
-            </p>
           </div>
           <div className="ml-auto">
             {stats ? (
