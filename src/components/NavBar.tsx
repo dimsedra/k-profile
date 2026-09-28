@@ -76,6 +76,7 @@ export function NavBar({ route }: { route: Route }) {
               </a>
             );
           })}
+          {isAdmin && (
           <div ref={addRef} className="relative shrink-0">
             <button
               onClick={() => setAddOpen((o) => !o)}
@@ -116,6 +117,7 @@ export function NavBar({ route }: { route: Route }) {
               </div>
             )}
           </div>
+          )}
           <a
             href="#/login"
             aria-current={route.name === "login" ? "page" : undefined}
@@ -128,6 +130,7 @@ export function NavBar({ route }: { route: Route }) {
           >
             {userEmail ? (isAdmin ? "Admin" : "Account") : "Sign in"}
           </a>
+          {isAdmin && (
           <a
             href="#/settings"
             aria-current={route.name === "settings" ? "page" : undefined}
@@ -140,6 +143,7 @@ export function NavBar({ route }: { route: Route }) {
           >
             Settings
           </a>
+          )}
         </nav>
       </div>
     </header>
