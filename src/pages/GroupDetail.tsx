@@ -508,7 +508,7 @@ function MemberTable({ members, config }: { members: Idol[]; config: EngineConfi
             {MEMBER_COLUMNS.map((col) => (
               <th
                 key={col.key}
-                className={cn("px-3 py-2.5", col.numeric ? "text-right" : "text-left")}
+                className="px-3 py-2.5 text-center"
               >
                 <button
                   onClick={() => toggle(col.key)}
@@ -540,15 +540,15 @@ function MemberTable({ members, config }: { members: Idol[]; config: EngineConfi
                   <Portrait idol={row.idol} className="h-full w-full" />
                 </div>
               </td>
-              <td className="px-3 py-2 font-semibold">{row.idol.stageName}</td>
-              <td className="px-3 py-2">{roleLabel(row.idol.roles[0] ?? "")}</td>
+              <td className="px-3 py-2 text-center font-semibold">{row.idol.stageName}</td>
+              <td className="px-3 py-2 text-center">{roleLabel(row.idol.roles[0] ?? "")}</td>
               {(["vocal", "rap", "dance", "stage", "visual"] as const).map((k) => (
-                <td key={k} className={cn("tnum px-3 py-2 text-right", statTone(row.cats[k]))}>
+                <td key={k} className={cn("tnum px-3 py-2 text-center", statTone(row.cats[k]))}>
                   {Math.round(row.cats[k])}
                 </td>
               ))}
-              <td className="tnum px-3 py-2 text-right">{row.idol.popularity}</td>
-              <td className="px-3 py-2 text-right">
+              <td className="tnum px-3 py-2 text-center">{row.idol.popularity}</td>
+              <td className="px-3 py-2 text-center">
                 <OvrBadge ovr={row.ovr} size="sm" />
               </td>
             </tr>
