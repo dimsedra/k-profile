@@ -334,7 +334,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           },
           bio: (g.bio as string) ?? "",
           debutYear: (g.debut_year as number | null) ?? undefined,
-          agency: (g.agency as string | null) ?? "",
+          agency: g.agency_id == null ? "" : (agencyNameById.get(g.agency_id as number) ?? ""),
           fandomName: (g.fandom_name as string | null) ?? "",
         }))
       );
@@ -675,13 +675,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           (g) => g.name.toLowerCase() === clean.toLowerCase()
         );
         if (hit) return { error: `“${clean}” already exists as a group.`, id: hit.id };
+        const agency_id = await resolveAgencyId(input.agency);
         const { data: created, error } = await sb
           .from("groups")
           .insert({
             name: clean,
             bio: input.bio,
             debut_year: input.debutYear ?? null,
-            agency: input.agency || null,
+            agency_id,
             fandom_name: input.fandomName || null,
           })
           .select("id")
@@ -710,7 +711,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return { error: errMsg(e, "Failed to add group.") };
       }
     },
-    [refresh]
+    [refresh, resolveAgencyId]
   );
 
   const groupStats = useCallback(
@@ -735,10 +736,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     ): Promise<string | null> => {
       try {
         const sb = getSupabase();
+        const agency_id = await resolveAgencyId(patch.agency);
         const row: Record<string, unknown> = {
           bio: patch.bio,
           debut_year: patch.debutYear ?? null,
-          agency: patch.agency || null,
+          agency_id,
           fandom_name: patch.fandomName || null,
         };
         if (patch.photoFocus) {
@@ -770,7 +772,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return errMsg(e, "Failed to save group.");
       }
     },
-    [refresh]
+    [refresh, resolveAgencyId]
   );
 
   const value = useMemo<Store>(

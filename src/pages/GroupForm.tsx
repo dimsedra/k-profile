@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useStore } from "../store";
 import { Panel } from "../components/ui";
+import { SuggestInput } from "../components/SuggestInput";
 import { navigate } from "../router";
 
 const inputCls =
@@ -8,7 +9,7 @@ const inputCls =
 const labelCls = "mb-1.5 block text-[13px] font-semibold";
 
 export function GroupForm() {
-  const { ready, isAdmin, addGroup } = useStore();
+  const { ready, isAdmin, agencies, addGroup } = useStore();
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [debutYear, setDebutYear] = useState("");
@@ -106,10 +107,16 @@ export function GroupForm() {
             />
           </div>
           <div>
-            <label className={labelCls} htmlFor="g-agency">Agency</label>
-            <input
-              id="g-agency" className={inputCls} value={agency}
-              onChange={(e) => setAgency(e.target.value)} placeholder="Starship"
+            <SuggestInput
+              id="g-agency"
+              label="Agency"
+              value={agency}
+              options={agencies}
+              onChange={setAgency}
+              placeholder="Starship Entertainment"
+              matchedText={(name) => <>Matched canonical spelling: <strong>{name}</strong></>}
+              newText={(v) => <>New agency — “{v}” will be added automatically on save.</>}
+              emptyText="Start typing to match an existing agency. Leave blank for none."
             />
           </div>
           <div className="sm:col-span-2">

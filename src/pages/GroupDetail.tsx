@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useStore } from "../store";
 import { OvrBadge, Panel, PhotoCard, Portrait, StatBar, statTone } from "../components/ui";
+import { SuggestInput } from "../components/SuggestInput";
 import { CATEGORIES, computeOvr, ovrOf, roleLabel, type CategoryKey, type EngineConfig, type Idol } from "../engine/ovr";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
@@ -12,7 +13,7 @@ const labelCls = "mb-1.5 block text-[13px] font-semibold";
 export function GroupDetail({ id }: { id: number }) {
   const {
     groups, groupStats, groupMemberIds, idols, config,
-    ready, isAdmin, updateGroup, deleteGroup,
+    ready, isAdmin, updateGroup, deleteGroup, agencies,
   } = useStore();
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState("");
@@ -296,10 +297,16 @@ export function GroupDetail({ id }: { id: number }) {
               />
             </div>
             <div>
-              <label className={labelCls} htmlFor="g-agency">Agency</label>
-              <input
-                id="g-agency" className={inputCls} value={agency}
-                onChange={(e) => setAgency(e.target.value)} placeholder="Starship"
+              <SuggestInput
+                id="g-agency"
+                label="Agency"
+                value={agency}
+                options={agencies}
+                onChange={setAgency}
+                placeholder="Starship Entertainment"
+                matchedText={(name) => <>Matched canonical spelling: <strong>{name}</strong></>}
+                newText={(v) => <>New agency — “{v}” will be added automatically on save.</>}
+                emptyText="Start typing to match an existing agency. Leave blank for none."
               />
             </div>
             <div>
