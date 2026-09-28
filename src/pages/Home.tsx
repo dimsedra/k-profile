@@ -61,41 +61,43 @@ export function Home() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      {/* Hero — the binder's best card is the opening image */}
+      {/* Hero — giant type left, tilted top card right */}
       <div className="flex flex-col items-start gap-10 lg:flex-row lg:items-center lg:gap-16">
         <div className="max-w-xl">
-          <h1 className="font-display text-3xl font-bold leading-[1.15] sm:text-4xl">
+          <h1 className="font-display text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl">
             Scout idols like
             <br />
             athletes. Keep them
             <br />
             like <span className="text-punch">photocards.</span>
           </h1>
-          <p className="mt-5 max-w-md text-[15px] leading-relaxed text-mist">
+          <p className="mt-6 max-w-md text-[15px] leading-relaxed text-mist">
             K-Profile keeps a scouting sheet on every idol you follow — twenty
             atomic attributes, ranked roles, and a three-tier overall rating —
             then prints it all onto a collectible card.
           </p>
           <dl className="mt-8 flex gap-10">
             <div>
-              <dd className="font-display tnum text-3xl font-bold">{idols.length}</dd>
+              <dd className="font-display tnum text-4xl font-extrabold">{idols.length}</dd>
               <dt className="mt-1 text-[13px] text-mist">idols cataloged</dt>
             </div>
             <div>
-              <dd className="font-display tnum text-3xl font-bold">{groupCount}</dd>
+              <dd className="font-display tnum text-4xl font-extrabold">{groupCount}</dd>
               <dt className="mt-1 text-[13px] text-mist">groups on file</dt>
             </div>
             {soloists > 0 && (
               <div>
-                <dd className="font-display tnum text-3xl font-bold">{soloists}</dd>
+                <dd className="font-display tnum text-4xl font-extrabold">{soloists}</dd>
                 <dt className="mt-1 text-[13px] text-mist">soloists</dt>
               </div>
             )}
           </dl>
         </div>
         {top && (
-          <div className="mx-auto w-56 shrink-0 sm:w-64 lg:mr-6">
-            <PhotoCard idol={top.idol} ovr={top.ovr} href={`#/idol/${top.idol.id}`} settle />
+          <div className="mx-auto w-64 shrink-0 rotate-3 sm:w-80 lg:mr-6">
+            <div className="rounded-[17px] shadow-2xl shadow-ink/20">
+              <PhotoCard idol={top.idol} ovr={top.ovr} href={`#/idol/${top.idol.id}`} />
+            </div>
           </div>
         )}
       </div>
