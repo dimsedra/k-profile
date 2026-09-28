@@ -100,20 +100,20 @@ export function Home() {
         )}
       </div>
 
-      {/* Highlights */}
+      {/* Highlights — one panel, divider rows instead of boxes */}
       {top && popular && (
-        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <HighlightCard
+        <div className="mt-14 rounded-2xl border border-line bg-paper px-5 py-2">
+          <SpotlightRow
+            first
             heading="Top performer"
             href={`#/idol/${top.idol.id}`}
             portrait={<Portrait idol={top.idol} className="h-full w-full" />}
             name={top.idol.stageName}
             sub={`${top.idol.group} — ${roleLabel(top.idol.roles[0] ?? "allRounder")}`}
-            metric={<OvrBadge ovr={top.ovr} size="lg" />}
-            metricLabel="overall rating"
+            metric={<OvrBadge ovr={top.ovr} size="md" />}
           />
           {topGroup && (
-            <HighlightCard
+            <SpotlightRow
               heading="Top group"
               href={`#/group/${topGroup.id}`}
               portrait={
@@ -127,53 +127,49 @@ export function Home() {
               }
               name={topGroup.name}
               sub={`${topGroup.count} members`}
-              metric={<OvrBadge ovr={topGroup.ovr} size="lg" />}
-              metricLabel="group rating"
+              metric={<OvrBadge ovr={topGroup.ovr} size="md" />}
             />
           )}
-          <HighlightCard
+          <SpotlightRow
             heading="Fandom powerhouse"
             href={`#/idol/${popular.idol.id}`}
             portrait={<Portrait idol={popular.idol} className="h-full w-full" />}
             name={popular.idol.stageName}
             sub={`${popular.idol.group} — ${roleLabel(popular.idol.roles[0] ?? "allRounder")}`}
             metric={
-              <span className="font-display tnum text-2xl font-bold text-punch">
+              <span className="font-display tnum text-xl font-bold text-punch">
                 {popular.idol.popularity}
               </span>
             }
-            metricLabel="popularity pts"
           />
         </div>
       )}
 
-      {/* League leaders */}
+      {/* League leaders — one panel, compact rows */}
       {leaders.some((l) => l.best) && (
-        <div className="mt-14">
-          <h2 className="font-display text-[16px] font-semibold">League leaders</h2>
-          <p className="mt-1 text-[13px] text-mist">
-            Best in each category, across the whole catalog.
+        <div className="mt-10 rounded-2xl border border-line bg-paper px-5 py-2">
+          <p className="py-3 text-[13px] text-mist">
+            <span className="font-display text-[15px] font-semibold text-ink">League leaders</span>
+            {" — "}best in each category, across the whole catalog.
           </p>
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {leaders.map(
-              ({ cat, best }) =>
-                best && (
-                  <a
-                    key={cat.key}
-                    href={`#/idol/${best.idol.id}`}
-                    className="rounded-2xl border border-line bg-paper p-4 transition-colors hover:border-ink/30"
-                  >
-                    <p className="text-[13px] text-mist">{cat.label}</p>
-                    <p className="mt-1 truncate font-display text-[15px] font-semibold">
-                      {best.idol.stageName}
-                    </p>
-                    <p className="tnum mt-1 font-display text-2xl font-bold text-holo">
-                      {Math.round(best.value)}
-                    </p>
-                  </a>
-                )
-            )}
-          </div>
+          {leaders.map(
+            ({ cat, best }) =>
+              best && (
+                <a
+                  key={cat.key}
+                  href={`#/idol/${best.idol.id}`}
+                  className="flex items-center gap-3 border-t border-line/70 py-2.5"
+                >
+                  <span className="w-28 shrink-0 text-[13px] text-mist">{cat.label}</span>
+                  <span className="min-w-0 flex-1 truncate font-display text-[14px] font-semibold">
+                    {best.idol.stageName}
+                  </span>
+                  <span className="tnum font-display text-xl font-bold text-holo">
+                    {Math.round(best.value)}
+                  </span>
+                </a>
+              )
+          )}
         </div>
       )}
 
@@ -204,14 +200,14 @@ export function Home() {
   );
 }
 
-function HighlightCard({
+function SpotlightRow({
   heading,
   href,
   portrait,
   name,
   sub,
   metric,
-  metricLabel,
+  first = false,
 }: {
   heading: string;
   href: string;
@@ -219,23 +215,20 @@ function HighlightCard({
   name: string;
   sub: string;
   metric: React.ReactNode;
-  metricLabel: string;
+  first?: boolean;
 }) {
   return (
     <a
       href={href}
-      className="group flex items-center gap-4 rounded-2xl border border-line bg-paper p-4 transition-colors hover:border-ink/30"
+      className={`group flex items-center gap-4 py-3.5 ${first ? "" : "border-t border-line/70"}`}
     >
-      <div className="h-20 w-14 shrink-0 overflow-hidden rounded-lg">{portrait}</div>
+      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">{portrait}</div>
       <div className="min-w-0">
-        <p className="text-[13px] text-mist">{heading}</p>
-        <p className="mt-0.5 truncate font-display text-[15px] font-semibold">{name}</p>
+        <p className="text-[12px] uppercase tracking-widest text-mist">{heading}</p>
+        <p className="mt-0.5 truncate font-display text-[16px] font-bold">{name}</p>
         <p className="truncate text-[13px] text-mist">{sub}</p>
       </div>
-      <div className="ml-auto text-right">
-        {metric}
-        <p className="mt-1 text-[12px] text-mist">{metricLabel}</p>
-      </div>
+      <div className="ml-auto shrink-0">{metric}</div>
     </a>
   );
 }
