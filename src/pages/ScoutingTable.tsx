@@ -491,7 +491,7 @@ function FilterGroupSearch({
           autoComplete="off"
           className="w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px] placeholder:text-mist/60"
         />
-        {open && matches.length > 0 && (
+        {open && (matches.length > 0 || query) && (
           <ul
             id="group-filter-suggest"
             role="listbox"
@@ -516,6 +516,11 @@ function FilterGroupSearch({
                 {name}
               </li>
             ))}
+            {matches.length === 0 && (
+              <li className="px-3 py-2 text-[13px] text-mist">
+                No groups match “{q.trim()}”.
+              </li>
+            )}
           </ul>
         )}
       </div>
