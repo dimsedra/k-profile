@@ -422,11 +422,25 @@ function FilterGroupSearch({
   onToggle: (name: string) => void;
 }) {
   const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+
   const query = q.trim().toLowerCase();
-  const shown = (query
+  const matches = (query
     ? options.filter((o) => o.toLowerCase().includes(query))
     : options
-  ).slice(0, 12);
+  )
+    .filter((o) => !selected.includes(o))
+    .slice(0, 8);
+  const hi = matches.length > 0 ? highlight % matches.length : 0;
+
+  const pick = (name: string) => {
+    onToggle(name);
+    setQ("");
+    setHighlight(0);
+    setOpen(true);
+  };
+
   return (
     <div>
       <p className="mb-1.5 text-[13px] font-medium">Groups</p>
@@ -444,28 +458,66 @@ function FilterGroupSearch({
           ))}
         </div>
       )}
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Type to filter groups…"
-        aria-label="Filter group options"
-        className="mb-1.5 w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px] placeholder:text-mist/60"
-      />
-      <div className="max-h-32 space-y-1 overflow-auto">
-        {shown.map((name) => (
-          <label key={name} className="flex cursor-pointer items-center gap-2 text-[13px]">
-            <input
-              type="checkbox"
-              checked={selected.includes(name)}
-              onChange={() => onToggle(name)}
-              className="h-4 w-4"
-            />
-            <span className={selected.includes(name) ? "font-medium" : "text-mist"}>
-              {name}
-            </span>
-          </label>
-        ))}
-        {shown.length === 0 && <p className="text-[12px] text-mist">No groups match.</p>}
+      <div className="relative">
+        <input
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setHighlight(0);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown" && matches.length > 0) {
+              e.preventDefault();
+              setHighlight((h) => (h + 1) % matches.length);
+            } else if (e.key === "ArrowUp" && matches.length > 0) {
+              e.preventDefault();
+              setHighlight((h) => (h - 1 + matches.length) % matches.length);
+            } else if (e.key === "Enter" && open && matches.length > 0) {
+              e.preventDefault();
+              pick(matches[hi]);
+            } else if (e.key === "Escape") {
+              e.stopPropagation();
+              setOpen(false);
+            }
+          }}
+          placeholder="Type to filter groups…"
+          aria-label="Type to filter groups"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls="group-filter-suggest"
+          autoComplete="off"
+          className="w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px] placeholder:text-mist/60"
+        />
+        {open && matches.length > 0 && (
+          <ul
+            id="group-filter-suggest"
+            role="listbox"
+            className="absolute inset-x-0 top-full z-10 mt-1 max-h-44 overflow-auto rounded-lg border border-line bg-paper py-1 shadow-lg"
+          >
+            {matches.map((name, i) => (
+              <li
+                key={name}
+                role="option"
+                aria-selected={i === hi}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  pick(name);
+                }}
+                onMouseEnter={() => setHighlight(i)}
+                className={
+                  i === hi
+                    ? "cursor-pointer bg-sleeve px-3 py-1.5 text-[13px] font-medium"
+                    : "cursor-pointer px-3 py-1.5 text-[13px] text-mist"
+                }
+              >
+                {name}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
