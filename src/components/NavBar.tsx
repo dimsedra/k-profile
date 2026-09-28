@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "../utils/cn";
 import type { Route } from "../router";
 import { useStore } from "../store";
+import { SearchBox } from "./SearchBox";
 
 const LINKS: { label: string; href: string; match: string[] }[] = [
   { label: "Home", href: "#/", match: ["home"] },
@@ -53,6 +54,9 @@ export function NavBar({ route }: { route: Route }) {
             Scouting & Idol Database
           </span>
         </a>
+        <div className="min-w-0 flex-1 sm:max-w-xs">
+          <SearchBox />
+        </div>
         <nav className="ml-auto flex flex-wrap items-center justify-end gap-1">
           {LINKS.map((l) => {
             const active = l.match.includes(route.name);
