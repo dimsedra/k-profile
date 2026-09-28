@@ -4,7 +4,7 @@
 -- Admin-allow paths are verified end-to-end over REST (see e2e check),
 -- because pgTAP cannot mint a JWT carrying app_metadata claims.
 begin;
-select plan(19);
+select plan(21);
 
 -- Fixtures inserted as table owner (bypasses RLS).
 insert into public.groups (name) values ('Probe Group');
@@ -46,6 +46,17 @@ select results_eq(
   $$select name from public.groups where name = 'Probe Group'$$,
   array['Probe Group'],
   'anon reads the group list'
+);
+select results_eq(
+  $$select bio from public.groups where name = 'Probe Group'$$,
+  array[''],
+  'anon reads group profile columns'
+);
+select throws_ok(
+  $$update public.groups set bio = 'x'$$,
+  '42501',
+  null,
+  'anon cannot update groups'
 );
 
 -- anon: holds no write grant, so every write stops before policies run.
