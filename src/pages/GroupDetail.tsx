@@ -12,7 +12,7 @@ const labelCls = "mb-1.5 block text-[13px] font-semibold";
 export function GroupDetail({ id }: { id: number }) {
   const {
     groups, groupStats, groupMemberIds, idols, config,
-    ready, isAdmin, updateGroup,
+    ready, isAdmin, updateGroup, deleteGroup,
   } = useStore();
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState("");
@@ -22,6 +22,8 @@ export function GroupDetail({ id }: { id: number }) {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [error, setError] = useState("");
+  const [removeError, setRemoveError] = useState("");
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [busy, setBusy] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
   const [focus, setFocus] = useState({ x: 50, y: 50 });
@@ -204,26 +206,62 @@ export function GroupDetail({ id }: { id: number }) {
       </div>
 
       {isAdmin && !editing && !adjusting && (
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={startEdit}
-            className="rounded-lg bg-ink px-3 py-2 text-[14px] font-semibold text-white hover:bg-ink/90"
-          >
-            Edit group
-          </button>
-          {group.photo && (
+        <>
+          <div className="mt-4 flex gap-2">
             <button
-              onClick={() => {
-                setFocus({ ...group.photoFocus });
-                setError("");
-                setAdjusting(true);
-              }}
-              className="rounded-lg border border-line bg-paper px-3 py-2 text-[14px] font-medium text-mist hover:text-ink"
+              onClick={startEdit}
+              className="rounded-lg bg-ink px-3 py-2 text-[14px] font-semibold text-white hover:bg-ink/90"
             >
-              Reposition cover
+              Edit group
             </button>
+            {group.photo && (
+              <button
+                onClick={() => {
+                  setFocus({ ...group.photoFocus });
+                  setError("");
+                  setAdjusting(true);
+                }}
+                className="rounded-lg border border-line bg-paper px-3 py-2 text-[14px] font-medium text-mist hover:text-ink"
+              >
+                Reposition cover
+              </button>
+            )}
+            {confirmingRemove ? (
+              <button
+                onClick={() =>
+                  void deleteGroup(group.id).then((msg) => {
+                    if (msg) {
+                      setRemoveError(msg);
+                      setConfirmingRemove(false);
+                    } else navigate("/binder");
+                  })
+                }
+                disabled={members.length > 0}
+                title={members.length > 0 ? "Remove or move all members first" : undefined}
+                className="rounded-lg bg-punch px-3 py-2 text-[14px] font-semibold text-white disabled:opacity-40"
+              >
+                Confirm removal
+              </button>
+            ) : (
+              <button
+                onClick={() => setConfirmingRemove(true)}
+                className="rounded-lg border border-line bg-paper px-3 py-2 text-[14px] font-medium text-mist hover:text-punch"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          {members.length > 0 && (
+            <p className="mt-1.5 text-[12px] text-mist">
+              Groups with members cannot be removed — move or remove the members first.
+            </p>
           )}
-        </div>
+          {removeError && (
+            <p role="alert" className="mt-2 rounded-lg bg-punch-soft px-3 py-2 text-[13px] font-medium text-punch">
+              {removeError}
+            </p>
+          )}
+        </>
       )}
 
       {adjusting && (

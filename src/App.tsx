@@ -1,6 +1,7 @@
+import { useEffect } from "react";
 import { NavBar } from "./components/NavBar";
 import { useRoute } from "./router";
-import { StoreProvider } from "./store";
+import { StoreProvider, useStore } from "./store";
 import { Binder } from "./pages/Binder";
 import { Home } from "./pages/Home";
 import { IdolDetail } from "./pages/IdolDetail";
@@ -13,6 +14,12 @@ import { Settings } from "./pages/Settings";
 
 function Screen() {
   const route = useRoute();
+  const { refresh } = useStore();
+  // Re-sync on every navigation so no page ever renders stale data
+  // (e.g. a group created in another tab, or just before navigating here).
+  useEffect(() => {
+    void refresh();
+  }, [route, refresh]);
   return (
     <div className="min-h-screen bg-sleeve text-ink">
       <NavBar route={route} />

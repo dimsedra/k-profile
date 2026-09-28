@@ -204,6 +204,7 @@ interface Store {
     input: { name: string; bio: string; debutYear?: number; agency: string; fandomName: string },
     photoFile?: File | null
   ) => Promise<{ id?: number; error?: string }>;
+  deleteGroup: (id: number) => Promise<string | null>;
   updateGroup: (
     id: number,
     patch: { bio: string; debutYear?: number; agency: string; fandomName: string; photoFocus?: { x: number; y: number } },
@@ -585,6 +586,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [refresh]
   );
 
+  /**
+   * Groups with members cannot be deleted (FK restrict) — the page disables
+   * the button in that case; this is the last line of defense plus storage
+   * cleanup for empty groups.
+   */
+  const deleteGroup = useCallback(
+    async (id: number) => {
+      try {
+        const sb = getSupabase();
+        await sb.from("groups").delete().eq("id", id).throwOnError();
+        await sb.storage.from(PHOTO_BUCKET).remove([`group-${id}/portrait`]);
+        await refresh();
+        return null;
+      } catch (e) {
+        return errMsg(e, "Failed to remove group. Groups with members cannot be removed.");
+      }
+    },
+    [refresh]
+  );
+
   const groupMemberIds = useCallback(
     (groupId: number): number[] => byGroup.current.get(groupId) ?? [],
     []
@@ -728,6 +749,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       groupMemberIds,
       updateGroup,
       addGroup,
+      deleteGroup,
     }),
     [
       ready,
@@ -751,6 +773,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       groupMemberIds,
       updateGroup,
       addGroup,
+      deleteGroup,
     ]
   );
 
