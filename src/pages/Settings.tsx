@@ -474,6 +474,42 @@ export function Settings() {
           </p>
         </Panel>
       </div>
+
+      {/* Group combined stats */}
+      <h2 className="mt-10 font-display text-[16px] font-semibold">
+        Group combined stats
+      </h2>
+      <p className="mt-1 text-[13px] text-mist">
+        How members pull the group average. Applies to every group immediately.
+      </p>
+      <div className="mt-4 grid max-w-md gap-2">
+        {(
+          [
+            { id: "popularity", label: "Popularity-weighted", desc: "Bigger fandom = bigger pull." },
+            { id: "equal", label: "Equal weights", desc: "Every member pulls the same." },
+          ] as const
+        ).map((opt) => (
+          <button
+            key={opt.id}
+            disabled={!isAdmin}
+            onClick={() => {
+              if (!guard()) return;
+              void setConfig({ ...config, groupWeightMode: opt.id }).then(
+                (msg) => msg && setSaveError(msg)
+              );
+            }}
+            className={cn(
+              "rounded-xl border p-3 text-left transition-colors disabled:opacity-50",
+              config.groupWeightMode === opt.id
+                ? "border-punch bg-punch-soft/40"
+                : "border-line bg-paper hover:border-ink/30"
+            )}
+          >
+            <span className="text-[14px] font-semibold">{opt.label}</span>
+            <span className="mt-0.5 block text-[12px] text-mist">{opt.desc}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

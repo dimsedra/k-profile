@@ -21,13 +21,18 @@ export interface GroupStats {
 
 const CAT_KEYS: CategoryKey[] = ["vocal", "rap", "dance", "stage", "visual"];
 
-export function computeGroupStats(members: GroupMemberInput[]): GroupStats | null {
+export type GroupWeightMode = "popularity" | "equal";
+
+export function computeGroupStats(
+  members: GroupMemberInput[],
+  mode: GroupWeightMode = "popularity"
+): GroupStats | null {
   if (members.length === 0) return null;
   const total = members.reduce((s, m) => s + m.popularity, 0);
   const weights =
-    total > 0
-      ? members.map((m) => m.popularity / total)
-      : members.map(() => 1 / members.length);
+    mode === "equal" || total <= 0
+      ? members.map(() => 1 / members.length)
+      : members.map((m) => m.popularity / total);
   const cats = {} as Record<CategoryKey, number>;
   for (const k of CAT_KEYS)
     cats[k] = members.reduce((s, m, i) => s + m.cats[k] * weights[i], 0);

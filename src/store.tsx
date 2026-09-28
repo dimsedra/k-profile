@@ -91,6 +91,7 @@ interface EngineRow {
   role_matrix: Record<string, Record<CategoryKey, number>>;
   role_decay: number | string;
   drift_max: number | string;
+  group_weight_mode: string | null;
 }
 
 const errMsg = (e: unknown, fallback: string) =>
@@ -134,11 +135,14 @@ function sanitizeEngine(eng: EngineRow): EngineConfig {
   }
   const roleDecay = Number(eng.role_decay);
   const driftMax = Number(eng.drift_max);
+  const groupWeightMode =
+    eng.group_weight_mode === "equal" ? "equal" : DEFAULT_CONFIG.groupWeightMode;
   return {
     subWeights,
     roleMatrix,
     roleDecay: Number.isFinite(roleDecay) ? roleDecay : DEFAULT_CONFIG.roleDecay,
     driftMax: Number.isFinite(driftMax) ? driftMax : DEFAULT_CONFIG.driftMax,
+    groupWeightMode,
   };
 }
 
@@ -584,6 +588,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             role_matrix: cfg.roleMatrix,
             role_decay: cfg.roleDecay,
             drift_max: cfg.driftMax,
+            group_weight_mode: cfg.groupWeightMode,
             updated_at: new Date().toISOString(),
           })
           .eq("id", 1)
@@ -717,7 +722,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const b = computeOvr(m, config);
         return { id: m.id, cats: b.cats, ovr: b.ovr, popularity: m.popularity };
       });
-      return computeGroupStats(inputs);
+      return computeGroupStats(inputs, config.groupWeightMode);
     },
     [idols, config]
   );
