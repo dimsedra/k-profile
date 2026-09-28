@@ -19,7 +19,7 @@ import {
   type Idol,
 } from "./engine/ovr";
 import { computeGroupStats, type GroupMemberInput, type GroupStats } from "./engine/groups";
-import { cardPhotoUrl, getSupabase, supabaseEnvMissing } from "./lib/supabase";
+import { getSupabase, supabaseEnvMissing, versionedPhotoUrl } from "./lib/supabase";
 
 /* ------------------------- database row shapes ------------------------ */
 
@@ -36,6 +36,7 @@ interface IdolRow {
   photo_path: string | null;
   photo_kind: string;
   popularity: number;
+  updated_at: string;
 }
 
 interface RoleRow {
@@ -159,7 +160,7 @@ function toIdol(
     debutYear: row.debut_year ?? undefined,
     agency: row.agency ?? "",
     bio: row.bio,
-    photo: row.photo_path ? cardPhotoUrl(row.photo_path) : undefined,
+    photo: row.photo_path ? versionedPhotoUrl(row.photo_path, row.updated_at) : undefined,
     photoPath: row.photo_path ?? undefined,
     photoKind: row.photo_kind as Idol["photoKind"],
     roles: roles.map((r) => r.role_id),
@@ -303,7 +304,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         groupRows.map((g) => ({
           id: g.id as number,
           name: g.name as string,
-          photo: g.photo_path ? cardPhotoUrl(g.photo_path as string) : undefined,
+          photo: g.photo_path
+            ? versionedPhotoUrl(g.photo_path as string, g.updated_at as string)
+            : undefined,
           photoPath: (g.photo_path as string | null) ?? undefined,
           photoKind: ((g.photo_kind as string) ?? "image") as GroupEntry["photoKind"],
           photoFocus: {
@@ -623,7 +626,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (upErr) throw upErr;
           await sb
             .from("groups")
-            .update({ photo_path: `group-${id}/portrait`, photo_kind: kind })
+            .update({
+              photo_path: `group-${id}/portrait`,
+              photo_kind: kind,
+              updated_at: new Date().toISOString(),
+            })
             .eq("id", id)
             .throwOnError();
         }
