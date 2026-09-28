@@ -6,7 +6,7 @@ import { navigate } from "../router";
 import { cn } from "../utils/cn";
 
 export function IdolDetail({ id }: { id: number }) {
-  const { idols, config, deleteIdol, isAdmin, ready } = useStore();
+  const { idols, groups, config, deleteIdol, isAdmin, ready } = useStore();
   const [confirming, setConfirming] = useState(false);
   const [removeError, setRemoveError] = useState("");
 
@@ -37,6 +37,10 @@ export function IdolDetail({ id }: { id: number }) {
       </div>
     );
   }
+
+  const groupId = groups.find(
+    (g) => g.name.toLowerCase() === idol.group.toLowerCase()
+  )?.id;
 
   const facts: [string, string][] = [
     ["Real name", idol.realName ?? ""],
@@ -98,7 +102,15 @@ export function IdolDetail({ id }: { id: number }) {
               {facts.map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4 text-[14px]">
                   <dt className="text-mist">{k}</dt>
-                  <dd className="text-right font-medium">{v}</dd>
+                  <dd className="text-right font-medium">
+                    {k === "Group" && groupId !== undefined ? (
+                      <a href={`#/group/${groupId}`} className="text-punch hover:underline">
+                        {v}
+                      </a>
+                    ) : (
+                      v
+                    )}
+                  </dd>
                 </div>
               ))}
               {idol.customFields.map((f) => (
