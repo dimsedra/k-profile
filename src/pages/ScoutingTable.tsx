@@ -391,7 +391,7 @@ export function ScoutingTable() {
                     {Math.round(row.cats[k])}
                   </td>
                 ))}
-                <td className="tnum px-3 py-2 text-right">{row.idol.popularity}</td>
+                <td className={cn("tnum px-3 py-2 text-right", statTone(row.idol.popularity))}>{row.idol.popularity}</td>
                 <td className="px-3 py-2 text-right">
                   <OvrBadge ovr={row.ovr} size="sm" />
                 </td>

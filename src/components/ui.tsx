@@ -248,7 +248,7 @@ export function StatBar({
         <span className={cn("text-[13px]", strong ? "font-semibold" : "text-mist")}>
           {label}
         </span>
-        <span className={cn("tnum text-[13px]", strong ? "font-display font-semibold" : "font-semibold")}>
+        <span className={cn("tnum text-[13px]", strong ? "font-display font-semibold" : "font-semibold", statTone(rounded))}>
           {rounded}
         </span>
       </div>

@@ -8,7 +8,7 @@ import {
   type Gender,
   type Idol,
 } from "../engine/ovr";
-import { OvrBadge, Panel, PhotoCard } from "../components/ui";
+import { OvrBadge, Panel, PhotoCard, statTone } from "../components/ui";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
 
@@ -430,7 +430,7 @@ export function IdolForm({ editId }: { editId?: number }) {
             <div className="mt-3 space-y-1.5 text-[13px]">
               <div className="flex justify-between">
                 <span className="text-mist">Role-weighted base</span>
-                <span className="tnum font-semibold">{preview.base.toFixed(1)}</span>
+                <span className={cn("tnum font-semibold", statTone(preview.base))}>{preview.base.toFixed(1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-mist">Popularity drift</span>

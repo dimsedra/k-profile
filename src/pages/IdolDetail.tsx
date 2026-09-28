@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { CATEGORIES, computeOvr, roleLabel } from "../engine/ovr";
-import { Panel, PhotoCard, StatBar } from "../components/ui";
+import { Panel, PhotoCard, StatBar, statTone } from "../components/ui";
 import { navigate } from "../router";
+import { cn } from "../utils/cn";
 
 export function IdolDetail({ id }: { id: number }) {
   const { idols, config, deleteIdol, isAdmin, ready } = useStore();
@@ -141,7 +142,7 @@ export function IdolDetail({ id }: { id: number }) {
                       style={{ width: `${((r.score - 40) / 59) * 100}%` }}
                     />
                   </div>
-                  <span className="tnum w-10 text-right font-semibold">
+                  <span className={cn("tnum w-10 text-right font-semibold", statTone(r.score))}>
                     {r.score.toFixed(1)}
                   </span>
                   <span className="tnum w-14 text-right text-[13px] text-mist">
@@ -153,7 +154,7 @@ export function IdolDetail({ id }: { id: number }) {
             <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 border-t border-line pt-3 text-[14px]">
               <span>
                 Role-weighted base{" "}
-                <strong className="tnum">{breakdown.base.toFixed(1)}</strong>
+                <strong className={cn("tnum", statTone(breakdown.base))}>{breakdown.base.toFixed(1)}</strong>
               </span>
               <span>
                 Popularity drift{" "}

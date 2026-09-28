@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useStore } from "../store";
 import { CATEGORIES, computeOvr, ovrOf, roleLabel } from "../engine/ovr";
-import { OvrBadge, PhotoCard, Portrait } from "../components/ui";
+import { OvrBadge, PhotoCard, Portrait, statTone } from "../components/ui";
+import { cn } from "../utils/cn";
 
 export function Home() {
   const { idols, config, ready, groups: groupList, groupStats, groupMemberIds } = useStore();
@@ -137,7 +138,7 @@ export function Home() {
             name={popular.idol.stageName}
             sub={`${popular.idol.group} — ${roleLabel(popular.idol.roles[0] ?? "allRounder")}`}
             metric={
-              <span className="font-display tnum text-xl font-bold text-punch">
+              <span className={cn("font-display tnum text-xl font-bold", statTone(popular.idol.popularity))}>
                 {popular.idol.popularity}
               </span>
             }
@@ -164,7 +165,7 @@ export function Home() {
                   <span className="min-w-0 flex-1 truncate font-display text-[14px] font-semibold">
                     {best.idol.stageName}
                   </span>
-                  <span className="tnum font-display text-xl font-bold text-holo">
+                  <span className={cn("tnum font-display text-xl font-bold", statTone(best.value))}>
                     {Math.round(best.value)}
                   </span>
                 </a>
