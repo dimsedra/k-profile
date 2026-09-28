@@ -17,6 +17,7 @@ export function Settings() {
   const [activeRole, setActiveRole] = useState(ROLES[0].id);
   const [saveError, setSaveError] = useState("");
   const [newField, setNewField] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const guard = () => {
     if (!isAdmin) {
@@ -102,9 +103,15 @@ export function Settings() {
     if (!dirtyRef.current) setLocal(buildLocal(config));
   }, [config]);
 
+  // Flush a pending debounced save on unmount — otherwise dragging a
+  // slider and navigating away within the debounce window silently drops it.
   useEffect(
     () => () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (dirtyRef.current && localRef.current) {
+        dirtyRef.current = false;
+        void persistShares(localRef.current).then(() => setSaving(false));
+      }
     },
     []
   );
@@ -132,7 +139,7 @@ export function Settings() {
     );
   };
 
-  const persistShares = (next: Record<string, Shares>) => {
+  const persistShares = (next: Record<string, Shares>): Promise<void> => {
     const base = configRef.current;
     const subWeights = { ...base.subWeights };
     for (const cat of CATEGORIES) {
@@ -145,7 +152,7 @@ export function Settings() {
       const g = next[roleGroup(r.id)];
       if (g && groupKeysOk(roleGroup(r.id), g)) roleMatrix[r.id] = toCatRecord(g);
     }
-    void setConfig({ ...base, subWeights, roleMatrix }).then((msg) => {
+    return setConfig({ ...base, subWeights, roleMatrix }).then((msg) => {
       if (msg) {
         setSaveError(msg);
         dirtyRef.current = false;
@@ -196,10 +203,11 @@ export function Settings() {
       return { ...base, [group]: out };
     });
     dirtyRef.current = true;
+    setSaving(true);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       dirtyRef.current = false;
-      if (localRef.current) persistShares(localRef.current);
+      if (localRef.current) void persistShares(localRef.current).then(() => setSaving(false));
     }, 600);
   };
 
@@ -217,7 +225,12 @@ export function Settings() {
             apply to the whole database immediately.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <span className="tnum text-[12px] text-mist">
+              {saving ? "Saving…" : "All changes saved"}
+            </span>
+          )}
           <button
             onClick={() => {
               if (!guard()) return;
