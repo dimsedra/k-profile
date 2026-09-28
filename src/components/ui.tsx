@@ -42,6 +42,17 @@ export function OvrBadge({
   );
 }
 
+/* --------------------------- stat tone ---------------------------- */
+
+/** Color tier for a rounded 40–99 stat value, shared by tables. */
+export function statTone(v: number) {
+  const r = Math.round(v);
+  if (r >= 90) return "text-punch font-semibold";
+  if (r >= 80) return "text-holo font-semibold";
+  if (r < 65) return "text-mist";
+  return "";
+}
+
 /* --------------------------- portraits ---------------------------- */
 
 export function Portrait({

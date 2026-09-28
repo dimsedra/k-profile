@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { computeOvr, roleLabel, ROLES, type CategoryKey, type Idol } from "../engine/ovr";
-import { OvrBadge, Portrait } from "../components/ui";
+import { OvrBadge, Portrait, statTone } from "../components/ui";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
 
@@ -41,14 +41,6 @@ function valueOf(row: Row, key: SortKey): string | number {
     case "pop": return row.idol.popularity;
     case "ovr": return row.ovr;
   }
-}
-
-function statTone(v: number) {
-  const r = Math.round(v);
-  if (r >= 90) return "text-punch font-semibold";
-  if (r >= 80) return "text-holo font-semibold";
-  if (r < 65) return "text-mist";
-  return "";
 }
 
 export function ScoutingTable() {

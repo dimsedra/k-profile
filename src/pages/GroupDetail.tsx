@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import { useStore } from "../store";
-import { OvrBadge, Panel, PhotoCard, Portrait, StatBar } from "../components/ui";
-import { CATEGORIES, ovrOf } from "../engine/ovr";
+import { OvrBadge, Panel, PhotoCard, Portrait, StatBar, statTone } from "../components/ui";
+import { CATEGORIES, computeOvr, ovrOf, roleLabel, type CategoryKey, type EngineConfig, type Idol } from "../engine/ovr";
+import { navigate } from "../router";
+import { cn } from "../utils/cn";
 
 const inputCls =
   "w-full rounded-lg border border-line bg-paper px-3 py-2 text-[14px] placeholder:text-mist/60 focus:border-ink/40";
@@ -267,8 +269,134 @@ export function GroupDetail({ id }: { id: number }) {
               <PhotoCard key={m.id} idol={m} ovr={ovrOf(m, config)} href={`#/idol/${m.id}`} />
             ))}
           </div>
+          <MemberTable members={members} config={config} />
         </>
       )}
+    </div>
+  );
+}
+
+type MemberSortKey = "name" | "role" | CategoryKey | "pop" | "ovr";
+
+const MEMBER_COLUMNS: { key: MemberSortKey; label: string; numeric?: boolean }[] = [
+  { key: "name", label: "Stage Name" },
+  { key: "role", label: "Primary Role" },
+  { key: "vocal", label: "Vocal", numeric: true },
+  { key: "rap", label: "Rap", numeric: true },
+  { key: "dance", label: "Dance", numeric: true },
+  { key: "stage", label: "Stage", numeric: true },
+  { key: "visual", label: "Visual", numeric: true },
+  { key: "pop", label: "Pop", numeric: true },
+  { key: "ovr", label: "OVR", numeric: true },
+];
+
+function memberValue(
+  row: { idol: Idol; cats: Record<CategoryKey, number>; ovr: number },
+  key: MemberSortKey
+): string | number {
+  switch (key) {
+    case "name":
+      return row.idol.stageName.toLowerCase();
+    case "role":
+      return roleLabel(row.idol.roles[0] ?? "");
+    case "pop":
+      return row.idol.popularity;
+    case "ovr":
+      return row.ovr;
+    default:
+      return row.cats[key];
+  }
+}
+
+function MemberTable({ members, config }: { members: Idol[]; config: EngineConfig }) {
+  const [sort, setSort] = useState<{ key: MemberSortKey; dir: 1 | -1 }>({ key: "ovr", dir: -1 });
+
+  const rows = useMemo(
+    () =>
+      members.map((idol) => {
+        const b = computeOvr(idol, config);
+        return { idol, cats: b.cats, ovr: b.ovr };
+      }),
+    [members, config]
+  );
+
+  const visible = useMemo(() => {
+    const va = (r: (typeof rows)[number]) => memberValue(r, sort.key);
+    return [...rows].sort((a, b) => {
+      const x = va(a);
+      const y = va(b);
+      if (x < y) return -1 * sort.dir;
+      if (x > y) return 1 * sort.dir;
+      return 0;
+    });
+  }, [rows, sort]);
+
+  const toggle = (key: MemberSortKey) => {
+    setSort((prev) => {
+      if (prev.key !== key) {
+        const numeric = MEMBER_COLUMNS.find((c) => c.key === key)?.numeric;
+        return { key, dir: numeric ? -1 : 1 };
+      }
+      return { key, dir: (prev.dir * -1) as 1 | -1 };
+    });
+  };
+
+  return (
+    <div className="mt-8 overflow-x-auto rounded-2xl border border-line bg-paper">
+      <table className="w-full min-w-[760px] border-collapse text-[14px]">
+        <thead>
+          <tr className="border-b border-line">
+            <th className="w-12 px-3 py-2.5" aria-label="Portrait" />
+            {MEMBER_COLUMNS.map((col) => (
+              <th
+                key={col.key}
+                className={cn("px-3 py-2.5", col.numeric ? "text-right" : "text-left")}
+              >
+                <button
+                  onClick={() => toggle(col.key)}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[13px] font-semibold",
+                    sort.key === col.key ? "text-punch" : "text-mist hover:text-ink"
+                  )}
+                >
+                  {col.label}
+                  {sort.key === col.key && (
+                    <span className="tnum text-[11px]">{sort.dir === 1 ? "▲" : "▼"}</span>
+                  )}
+                </button>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {visible.map((row) => (
+            <tr
+              key={row.idol.id}
+              onClick={() => navigate(`/idol/${row.idol.id}`)}
+              onKeyDown={(e) => e.key === "Enter" && navigate(`/idol/${row.idol.id}`)}
+              tabIndex={0}
+              className="cursor-pointer border-b border-line/70 last:border-0 hover:bg-sleeve/70"
+            >
+              <td className="px-3 py-2">
+                <div className="h-9 w-9 overflow-hidden rounded-lg">
+                  <Portrait idol={row.idol} className="h-full w-full" />
+                </div>
+              </td>
+              <td className="px-3 py-2 font-semibold">{row.idol.stageName}</td>
+              <td className="px-3 py-2">{roleLabel(row.idol.roles[0] ?? "")}</td>
+              {(["vocal", "rap", "dance", "stage", "visual"] as const).map((k) => (
+                <td key={k} className={cn("tnum px-3 py-2 text-right", statTone(row.cats[k]))}>
+                  {Math.round(row.cats[k])}
+                </td>
+              ))}
+              <td className="tnum px-3 py-2 text-right">{row.idol.popularity}</td>
+              <td className="px-3 py-2 text-right">
+                <OvrBadge ovr={row.ovr} size="sm" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
