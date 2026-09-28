@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -12,10 +13,12 @@ import {
   CATEGORIES,
   DEFAULT_CONFIG,
   ROLES,
+  computeOvr,
   type CategoryKey,
   type EngineConfig,
   type Idol,
 } from "./engine/ovr";
+import { computeGroupStats, type GroupMemberInput, type GroupStats } from "./engine/groups";
 import { cardPhotoUrl, getSupabase, supabaseEnvMissing } from "./lib/supabase";
 
 /* ------------------------- database row shapes ------------------------ */
@@ -55,6 +58,13 @@ export interface FieldDef {
 export interface GroupEntry {
   id: number;
   name: string;
+  photo?: string;
+  photoPath?: string;
+  photoKind?: "image" | "video";
+  bio: string;
+  debutYear?: number;
+  agency: string;
+  fandomName: string;
 }
 
 interface FieldDefRow {
@@ -186,6 +196,13 @@ interface Store {
   setConfig: (cfg: EngineConfig) => Promise<string | null>;
   resetConfig: () => Promise<string | null>;
   addFieldDef: (label: string) => Promise<string | null>;
+  groupStats: (groupId: number) => GroupStats | null;
+  groupMemberIds: (groupId: number) => number[];
+  updateGroup: (
+    id: number,
+    patch: { bio: string; debutYear?: number; agency: string; fandomName: string },
+    opts?: { photoFile?: File | null; removePhoto?: boolean }
+  ) => Promise<string | null>;
   deleteFieldDef: (id: number) => Promise<string | null>;
 }
 
@@ -201,6 +218,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [fieldDefs, setFieldDefs] = useState<FieldDef[]>([]);
   const [groups, setGroups] = useState<GroupEntry[]>([]);
   const [session, setSession] = useState<Session | null>(null);
+  const byGroup = useRef(new Map<number, number[]>());
 
   const refresh = useCallback(async () => {
     if (supabaseEnvMissing) return;
@@ -218,7 +236,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             .order("id"),
           sb.from("idol_custom_values").select("*"),
           sb.from("engine_config").select("*").eq("id", 1).maybeSingle(),
-          sb.from("groups").select("id,name").order("name"),
+          sb.from("groups").select("*").order("name"),
         ]);
       const firstError = [
         idolsRes.error,
@@ -255,6 +273,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const groupNameById = new Map<number, string>(
         ((groupsRes.data ?? []) as GroupEntry[]).map((g) => [g.id, g.name])
       );
+      const groupRows = (groupsRes.data ?? []) as Record<string, unknown>[];
+      const membership = new Map<number, number[]>();
+      for (const r of (idolsRes.data ?? []) as { id: number; group_id: number }[]) {
+        const list = membership.get(r.group_id) ?? [];
+        list.push(r.id);
+        membership.set(r.group_id, list);
+      }
+      byGroup.current = membership;
       setIdols(
         ((idolsRes.data ?? []) as IdolRow[]).map((row) =>
           toIdol(
@@ -268,7 +294,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         )
       );
       setFieldDefs(defs);
-      setGroups(((groupsRes.data ?? []) as GroupEntry[]).map((g) => ({ id: g.id, name: g.name })));
+      setGroups(
+        groupRows.map((g) => ({
+          id: g.id as number,
+          name: g.name as string,
+          photo: g.photo_path ? cardPhotoUrl(g.photo_path as string) : undefined,
+          photoPath: (g.photo_path as string | null) ?? undefined,
+          photoKind: ((g.photo_kind as string) ?? "image") as GroupEntry["photoKind"],
+          bio: (g.bio as string) ?? "",
+          debutYear: (g.debut_year as number | null) ?? undefined,
+          agency: (g.agency as string | null) ?? "",
+          fandomName: (g.fandom_name as string | null) ?? "",
+        }))
+      );
 
       const eng = engineRes.data as EngineRow | null;
       if (eng) setConfigState(sanitizeEngine(eng));
@@ -535,6 +573,67 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [refresh]
   );
 
+  const groupMemberIds = useCallback(
+    (groupId: number): number[] => byGroup.current.get(groupId) ?? [],
+    []
+  );
+
+  const groupStats = useCallback(
+    (groupId: number) => {
+      const ids = new Set(byGroup.current.get(groupId) ?? []);
+      const members = idols.filter((i) => ids.has(i.id));
+      if (members.length === 0) return null;
+      const inputs: GroupMemberInput[] = members.map((m) => {
+        const b = computeOvr(m, config);
+        return { id: m.id, cats: b.cats, ovr: b.ovr, popularity: m.popularity };
+      });
+      return computeGroupStats(inputs);
+    },
+    [idols, config]
+  );
+
+  const updateGroup = useCallback(
+    async (
+      id: number,
+      patch: { bio: string; debutYear?: number; agency: string; fandomName: string },
+      opts?: { photoFile?: File | null; removePhoto?: boolean }
+    ): Promise<string | null> => {
+      try {
+        const sb = getSupabase();
+        const row: Record<string, unknown> = {
+          bio: patch.bio,
+          debut_year: patch.debutYear ?? null,
+          agency: patch.agency || null,
+          fandom_name: patch.fandomName || null,
+        };
+        if (opts?.removePhoto) {
+          row.photo_path = null;
+          row.photo_kind = "image";
+          await sb.storage.from(PHOTO_BUCKET).remove([`group-${id}/portrait`]);
+        }
+        await sb.from("groups").update(row).eq("id", id).throwOnError();
+        if (opts?.photoFile) {
+          const file = opts.photoFile;
+          const kind = file.type.startsWith("video/") ? "video" : "image";
+          const { error } = await sb.storage
+            .from(PHOTO_BUCKET)
+            .upload(`group-${id}/portrait`, file, { upsert: true, contentType: file.type });
+          if (error) throw error;
+          await sb
+            .from("groups")
+            .update({ photo_path: `group-${id}/portrait`, photo_kind: kind })
+            .eq("id", id)
+            .throwOnError();
+        }
+        await refresh();
+        return null;
+      } catch (e) {
+        return errMsg(e, "Failed to save group.");
+      }
+    },
+    [refresh]
+  );
+
   const value = useMemo<Store>(
     () => ({
       ready,
@@ -556,6 +655,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       resetConfig,
       addFieldDef,
       deleteFieldDef,
+      groupStats,
+      groupMemberIds,
+      updateGroup,
     }),
     [
       ready,
@@ -575,6 +677,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       resetConfig,
       addFieldDef,
       deleteFieldDef,
+      groupStats,
+      groupMemberIds,
+      updateGroup,
     ]
   );
 
