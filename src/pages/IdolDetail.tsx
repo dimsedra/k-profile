@@ -169,8 +169,13 @@ export function IdolDetail({ id }: { id: number }) {
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {CATEGORIES.map((cat) => (
               <Panel key={cat.key}>
-                <StatBar label={cat.label} value={breakdown.cats[cat.key]} strong />
-                <div className="mt-4 space-y-3">
+                <div className="mb-4 flex items-baseline justify-between gap-3 border-b border-line pb-3">
+                  <span className="font-display text-[17px] font-bold">{cat.label}</span>
+                  <span className="font-display tnum text-2xl font-bold">
+                    {Math.round(breakdown.cats[cat.key])}
+                  </span>
+                </div>
+                <div className="space-y-3">
                   {cat.subs.map((s) => (
                     <StatBar key={s.key} label={s.label} value={idol.attrs[s.key] ?? 50} />
                   ))}
