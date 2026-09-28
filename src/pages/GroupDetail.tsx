@@ -32,13 +32,6 @@ export function GroupDetail({ id }: { id: number }) {
     [idols, memberIds]
   );
   const stats = group ? groupStats(id) : null;
-  const portraitShim = useMemo(
-    () => ({
-      stageName: group?.name ?? "",
-      photo: photoFile ? URL.createObjectURL(photoFile) : group?.photo,
-    }),
-    [photoFile, group]
-  );
 
   if (!ready) {
     return (
@@ -114,18 +107,44 @@ export function GroupDetail({ id }: { id: number }) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-center gap-5">
-        <div className="h-28 w-[75px] shrink-0 overflow-hidden rounded-xl">
-          <Portrait idol={portraitShim} className="h-full w-full" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold">{group.name}</h1>
-          <p className="mt-1 text-[14px] text-mist">
-            {facts.map(([, v]) => v).join(" · ") || "No profile yet."}
-          </p>
-        </div>
-        <div className="ml-auto">
-          {stats ? <OvrBadge ovr={stats.ovr} size="lg" /> : <span className="text-mist">—</span>}
+      {/* Spotify-like artist header: wide banner, gradient, big name */}
+      <div className="relative overflow-hidden rounded-2xl border border-line">
+        {group.photo ? (
+          <img
+            src={group.photo}
+            alt={`${group.name} banner`}
+            className="h-56 w-full object-cover sm:h-72"
+          />
+        ) : (
+          <div className="flex h-56 w-full items-center justify-center bg-gradient-to-br from-holo-soft via-sleeve to-punch-soft sm:h-72">
+            <span className="font-display text-6xl font-bold text-mist">
+              {group.name.slice(0, 2)}
+            </span>
+          </div>
+        )}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-transparent"
+          aria-hidden
+        />
+        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-4 p-5 sm:p-6">
+          <div className="min-w-0">
+            <p className="text-[12px] font-semibold uppercase tracking-widest text-white/70">
+              Group
+            </p>
+            <h1 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
+              {group.name}
+            </h1>
+            <p className="mt-1 text-[13px] text-white/75">
+              {facts.map(([, v]) => v).join(" · ") || "No profile yet."}
+            </p>
+          </div>
+          <div className="ml-auto">
+            {stats ? (
+              <OvrBadge ovr={stats.ovr} size="lg" />
+            ) : (
+              <span className="text-white/70">—</span>
+            )}
+          </div>
         </div>
       </div>
 
