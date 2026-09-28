@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "../utils/cn";
-import { tierOf, roleLabel, type Idol } from "../engine/ovr";
+import { tierOf, roleLabel, type CategoryKey, type Idol } from "../engine/ovr";
 
 /* --------------------------- search input --------------------------- */
 
@@ -72,6 +72,91 @@ export function SearchInput({
         </button>
       )}
     </div>
+  );
+}
+
+/* --------------------------- pentagon ----------------------------- */
+
+const PENTA_ORDER: CategoryKey[] = ["vocal", "rap", "dance", "stage", "visual"];
+const PENTA_SHORT: Record<CategoryKey, string> = {
+  vocal: "VOC",
+  rap: "RAP",
+  dance: "DNC",
+  stage: "STG",
+  visual: "VIS",
+};
+
+/** Radar pentagon of the 5 parent categories. Domain 40–100, same as StatBar. */
+export function PentagonChart({
+  values,
+  size = 220,
+}: {
+  values: Record<CategoryKey, number>;
+  size?: number;
+}) {
+  const c = 110;
+  const R = 84;
+  const polar = (i: number, radius: number): [number, number] => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+    return [c + radius * Math.cos(a), c + radius * Math.sin(a)];
+  };
+  const radiusOf = (v: number) => R * Math.max(0, Math.min(1, (v - 40) / 60));
+  const points = (vals: number[]) =>
+    vals.map((v, i) => polar(i, v).join(",")).join(" ");
+
+  return (
+    <svg
+      viewBox="0 0 220 220"
+      width={size}
+      height={size}
+      role="img"
+      aria-label="Attribute pentagon"
+      className="mx-auto block"
+    >
+      {[40, 60, 80, 100].map((grid) => (
+        <polygon
+          key={grid}
+          points={points(PENTA_ORDER.map(() => radiusOf(grid)))}
+          fill="none"
+          stroke="var(--color-line)"
+          strokeWidth="1"
+        />
+      ))}
+      {PENTA_ORDER.map((_, i) => {
+        const [x, y] = polar(i, R);
+        return (
+          <line key={i} x1={c} y1={c} x2={x} y2={y} stroke="var(--color-line)" strokeWidth="1" />
+        );
+      })}
+      <polygon
+        points={points(PENTA_ORDER.map((k) => radiusOf(values[k])))}
+        fill="var(--color-punch)"
+        fillOpacity="0.18"
+        stroke="var(--color-punch)"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      {PENTA_ORDER.map((k, i) => {
+        const [x, y] = polar(i, radiusOf(values[k]));
+        const [lx, ly] = polar(i, R + 18);
+        return (
+          <g key={k}>
+            <circle cx={x} cy={y} r="3.5" fill="var(--color-punch)" />
+            <text
+              x={lx}
+              y={ly}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="10"
+              fontWeight="700"
+              fill="var(--color-mist)"
+            >
+              {PENTA_SHORT[k]} {Math.round(values[k])}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 

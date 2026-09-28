@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { CATEGORIES, computeOvr, roleLabel } from "../engine/ovr";
-import { OvrBadge, Panel, PhotoCard, StatBar, statTone } from "../components/ui";
+import { OvrBadge, Panel, PentagonChart, PhotoCard, StatBar, statTone } from "../components/ui";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
 
@@ -123,8 +123,12 @@ export function IdolDetail({ id }: { id: number }) {
             <OvrBadge ovr={breakdown.ovr} size="xl" className="shrink-0 shadow-sm" />
           </div>
 
-          {/* How the rating is built */}
-          <Panel className="mt-6" title="How this rating is built">
+          {/* How the rating is built + attribute pentagon */}
+          <div className="mt-6 grid gap-4 xl:grid-cols-[260px_1fr]">
+            <Panel>
+              <PentagonChart values={breakdown.cats} />
+            </Panel>
+            <Panel title="How this rating is built">
             <div className="space-y-2">
               {breakdown.roleScores.map((r) => (
                 <div key={r.roleId} className="flex items-center gap-3 text-[14px]">
@@ -165,6 +169,7 @@ export function IdolDetail({ id }: { id: number }) {
               weights — the strongest role carries the rating, extra roles refine it.
             </p>
           </Panel>
+          </div>
 
           {/* Categories + atomic breakdown */}
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
