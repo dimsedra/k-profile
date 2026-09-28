@@ -4,15 +4,24 @@ import { CATEGORIES, computeOvr, roleLabel } from "../engine/ovr";
 import { OvrBadge, Panel, PhotoCard, StatBar } from "../components/ui";
 import { navigate } from "../router";
 
-export function IdolDetail({ id }: { id: string }) {
-  const { idols, config, deleteIdol } = useStore();
+export function IdolDetail({ id }: { id: number }) {
+  const { idols, config, deleteIdol, isAdmin, ready } = useStore();
   const [confirming, setConfirming] = useState(false);
+  const [removeError, setRemoveError] = useState("");
 
   const idol = idols.find((i) => i.id === id);
   const breakdown = useMemo(
     () => (idol ? computeOvr(idol, config) : null),
     [idol, config]
   );
+
+  if (!ready) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+        <p className="font-display font-semibold">Loading scouting sheet…</p>
+      </div>
+    );
+  }
 
   if (!idol || !breakdown) {
     return (
@@ -43,32 +52,41 @@ export function IdolDetail({ id }: { id: string }) {
         {/* Left pane — the card and the person */}
         <div>
           <PhotoCard idol={idol} ovr={breakdown.ovr} />
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => navigate(`/edit/${idol.id}`)}
-              className="flex-1 rounded-lg bg-ink px-3 py-2 text-[14px] font-semibold text-white hover:bg-ink/90"
-            >
-              Edit sheet
-            </button>
-            {confirming ? (
+          {isAdmin && (
+            <div className="mt-4 flex gap-2">
               <button
-                onClick={() => {
-                  deleteIdol(idol.id);
-                  navigate("/binder");
-                }}
-                className="rounded-lg bg-punch px-3 py-2 text-[14px] font-semibold text-white"
+                onClick={() => navigate(`/edit/${idol.id}`)}
+                className="flex-1 rounded-lg bg-ink px-3 py-2 text-[14px] font-semibold text-white hover:bg-ink/90"
               >
-                Confirm removal
+                Edit sheet
               </button>
-            ) : (
-              <button
-                onClick={() => setConfirming(true)}
-                className="rounded-lg border border-line bg-paper px-3 py-2 text-[14px] font-medium text-mist hover:text-punch"
-              >
-                Remove
-              </button>
-            )}
-          </div>
+              {confirming ? (
+                <button
+                  onClick={() =>
+                    void deleteIdol(idol.id).then((msg) => {
+                      if (msg) setRemoveError(msg);
+                      else navigate("/binder");
+                    })
+                  }
+                  className="rounded-lg bg-punch px-3 py-2 text-[14px] font-semibold text-white"
+                >
+                  Confirm removal
+                </button>
+              ) : (
+                <button
+                  onClick={() => setConfirming(true)}
+                  className="rounded-lg border border-line bg-paper px-3 py-2 text-[14px] font-medium text-mist hover:text-punch"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          )}
+          {removeError && (
+            <p role="alert" className="mt-3 rounded-lg bg-punch-soft px-3 py-2 text-[13px] font-medium text-punch">
+              {removeError}
+            </p>
+          )}
 
           <Panel className="mt-6" title="Biography">
             <p className="text-[14px] leading-relaxed text-mist">{idol.bio || "No notes yet."}</p>

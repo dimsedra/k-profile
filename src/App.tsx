@@ -5,6 +5,7 @@ import { Binder } from "./pages/Binder";
 import { Home } from "./pages/Home";
 import { IdolDetail } from "./pages/IdolDetail";
 import { IdolForm } from "./pages/IdolForm";
+import { Login } from "./pages/Login";
 import { ScoutingTable } from "./pages/ScoutingTable";
 import { Settings } from "./pages/Settings";
 
@@ -17,9 +18,10 @@ function Screen() {
         {route.name === "home" && <Home />}
         {route.name === "table" && <ScoutingTable />}
         {route.name === "binder" && <Binder />}
-        {route.name === "idol" && <IdolDetail id={route.id} />}
+        {route.name === "idol" && <IdolDetail id={Number(route.id)} />}
         {route.name === "add" && <IdolForm key="add" />}
-        {route.name === "edit" && <IdolForm key={route.id} editId={route.id} />}
+        {route.name === "edit" && <IdolForm key={route.id} editId={Number(route.id)} />}
+        {route.name === "login" && <Login />}
         {route.name === "settings" && <Settings />}
       </main>
       <footer className="mx-auto max-w-6xl px-4 pb-10 pt-16 sm:px-6">

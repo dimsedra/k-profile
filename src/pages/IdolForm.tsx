@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from "react";
-import { useStore } from "../store";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useStore, type GroupEntry } from "../store";
 import {
   CATEGORIES,
   computeOvr,
@@ -20,7 +20,7 @@ const blankAttrs = () =>
   Object.fromEntries(CATEGORIES.flatMap((c) => c.subs.map((s) => [s.key, 70])));
 
 const blank = (): Idol => ({
-  id: "",
+  id: 0,
   stageName: "",
   realName: "",
   group: "",
@@ -36,16 +36,30 @@ const blank = (): Idol => ({
   customFields: [],
 });
 
-export function IdolForm({ editId }: { editId?: string }) {
-  const { idols, config, addIdol, updateIdol } = useStore();
-  const editing = editId ? idols.find((i) => i.id === editId) : undefined;
+export function IdolForm({ editId }: { editId?: number }) {
+  const { idols, config, fieldDefs, groups, isAdmin, ready, addIdol, updateIdol } = useStore();
+  const editing = editId !== undefined ? idols.find((i) => i.id === editId) : undefined;
 
   const [draft, setDraft] = useState<Idol>(() =>
     editing ? structuredClone(editing) : blank()
   );
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // The store loads async: if the sheet wasn't available on first render
+  // (e.g. cold-opened #/edit URL), sync it in once — and only once, so
+  // later keystrokes are never wiped by a background refresh.
+  const syncedRef = useRef(false);
+  useEffect(() => {
+    if (ready && !syncedRef.current) {
+      syncedRef.current = true;
+      setDraft(editing ? structuredClone(editing) : blank());
+    }
+  }, [ready, editing]);
 
   const preview = useMemo(() => computeOvr(draft, config), [draft, config]);
 
@@ -57,13 +71,22 @@ export function IdolForm({ editId }: { editId?: string }) {
     }));
 
   const readPhoto = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setError("That file isn't an image. Drop a JPG or PNG portrait.");
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+    if (!isImage && !isVideo) {
+      setError("That file isn't a photo or video. Drop an image or short clip.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => set({ photo: String(reader.result) });
-    reader.readAsDataURL(file);
+    if (file.size > 15 * 1024 * 1024) {
+      setError("That file is over the 15 MB bucket cap. Compress it first.");
+      return;
+    }
+    // The file itself uploads to the idol-cards bucket on save;
+    // the draft only holds a local preview URL until then.
+    if (draft.photo && draft.photo.startsWith("blob:")) URL.revokeObjectURL(draft.photo);
+    setPhotoFile(file);
+    setRemovePhoto(false);
+    set({ photo: URL.createObjectURL(file) });
   };
 
   const moveRole = (idx: number, dir: -1 | 1) => {
@@ -78,20 +101,64 @@ export function IdolForm({ editId }: { editId?: string }) {
 
   const availableRoles = ROLES.filter((r) => !draft.roles.includes(r.id));
 
-  const save = () => {
+  const save = async () => {
     if (!draft.stageName.trim()) return setError("Stage name is required.");
     if (!draft.group.trim()) return setError("Group is required — use “Solo” for soloists.");
     if (draft.roles.length === 0) return setError("Assign at least one role.");
+    setError("");
+    setBusy(true);
     const idol = { ...draft, stageName: draft.stageName.trim(), group: draft.group.trim() };
     if (editing) {
-      updateIdol(idol);
+      const msg = await updateIdol(idol, { photoFile, removePhoto });
+      setBusy(false);
+      if (msg) return setError(msg);
       navigate(`/idol/${idol.id}`);
     } else {
-      idol.id = `${idol.stageName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now().toString(36)}`;
-      addIdol(idol);
-      navigate(`/idol/${idol.id}`);
+      const msg = await addIdol(idol, photoFile);
+      setBusy(false);
+      if (msg) return setError(msg);
+      navigate("/binder");
     }
   };
+
+  if (!ready) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+        <p className="font-display font-semibold">Loading…</p>
+      </div>
+    );
+  }
+
+  if (editId !== undefined && !editing) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+        <p className="font-display font-semibold">This scouting sheet doesn't exist</p>
+        <p className="mt-2 text-[14px] text-mist">
+          The idol may have been removed from the database.
+        </p>
+        <a href="#/binder" className="mt-4 inline-block font-semibold text-punch">
+          Back to the binder
+        </a>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-20 text-center sm:px-6">
+        <p className="font-display font-semibold">Admins only</p>
+        <p className="mt-2 text-[14px] text-mist">
+          The catalog is public, but adding and editing needs an admin account.
+        </p>
+        <a
+          href="#/login"
+          className="mt-5 inline-block rounded-lg bg-punch px-4 py-2 text-[14px] font-semibold text-white"
+        >
+          Sign in as admin
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
@@ -118,9 +185,11 @@ export function IdolForm({ editId }: { editId?: string }) {
                   onChange={(e) => set({ realName: e.target.value })} placeholder="Yoon Sora" />
               </div>
               <div>
-                <label className={labelCls} htmlFor="f-group">Group</label>
-                <input id="f-group" className={inputCls} value={draft.group}
-                  onChange={(e) => set({ group: e.target.value })} placeholder="NOVA9, or Solo" />
+                <GroupCombobox
+                  value={draft.group}
+                  groups={groups}
+                  onChange={(v) => set({ group: v })}
+                />
               </div>
               <div>
                 <label className={labelCls} htmlFor="f-agency">Agency</label>
@@ -191,16 +260,28 @@ export function IdolForm({ editId }: { editId?: string }) {
                   </button>
                 </p>
                 <p className="mt-1 text-[12px] text-mist">
-                  Uploads go to the idol-cards storage bucket. Portrait orientation works best.
+                  Uploads go to the idol-cards storage bucket (max 15 MB).
+                  Images or short clips — portrait orientation works best.
                 </p>
+                {photoFile && (
+                  <p className="mt-1 text-[12px] font-medium text-holo">
+                    New file staged: {photoFile.name} — uploads on save.
+                  </p>
+                )}
                 {draft.photo && (
-                  <button onClick={() => set({ photo: undefined })}
+                  <button
+                    onClick={() => {
+                      if (draft.photo && draft.photo.startsWith("blob:")) URL.revokeObjectURL(draft.photo);
+                      setPhotoFile(null);
+                      setRemovePhoto(true);
+                      set({ photo: undefined });
+                    }}
                     className="mt-2 text-[12px] font-medium text-mist hover:text-punch">
                     Remove photo
                   </button>
                 )}
               </div>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden"
+              <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) readPhoto(f); }} />
             </div>
           </Panel>
@@ -304,62 +385,33 @@ export function IdolForm({ editId }: { editId?: string }) {
             </p>
           </Panel>
 
-          {/* Custom fields */}
-          <Panel
-            title="Custom fields"
-            aside={
-              <button
-                onClick={() =>
-                  set({
-                    customFields: [
-                      ...draft.customFields,
-                      { id: `cf-${Date.now()}`, label: "", value: "" },
-                    ],
-                  })
-                }
-                className="rounded-lg bg-punch/10 px-2.5 py-1 text-[13px] font-semibold text-punch hover:bg-punch hover:text-white"
-              >
-                + Add field
-              </button>
-            }
-          >
-            {draft.customFields.length === 0 ? (
+          {/* Custom fields — global definitions, managed in Settings */}
+          <Panel title="Custom fields">
+            {fieldDefs.length === 0 ? (
               <p className="text-[13px] text-mist">
-                Track anything the sheet doesn't cover — MBTI, blood type, Instagram handle.
+                No custom fields defined yet. Admins add them in Settings → Rating engine,
+                and they apply to every idol.
               </p>
             ) : (
               <div className="space-y-2">
-                {draft.customFields.map((f) => (
-                  <div key={f.id} className="flex gap-2">
+                {fieldDefs.map((d) => (
+                  <div key={d.id} className="flex items-center gap-2">
+                    <span className="w-40 shrink-0 text-[13px] font-medium">{d.label}</span>
                     <input
-                      className={cn(inputCls, "w-40")} placeholder="Field name" value={f.label}
-                      aria-label="Custom field name"
-                      onChange={(e) =>
+                      className={inputCls}
+                      placeholder="Value"
+                      value={draft.customFields.find((x) => x.id === String(d.id))?.value ?? ""}
+                      aria-label={d.label}
+                      onChange={(e) => {
+                        const value = e.target.value;
                         set({
-                          customFields: draft.customFields.map((x) =>
-                            x.id === f.id ? { ...x, label: e.target.value } : x
-                          ),
-                        })
-                      }
+                          customFields: [
+                            ...draft.customFields.filter((x) => x.id !== String(d.id)),
+                            { id: String(d.id), label: d.label, value },
+                          ],
+                        });
+                      }}
                     />
-                    <input
-                      className={inputCls} placeholder="Value" value={f.value}
-                      aria-label="Custom field value"
-                      onChange={(e) =>
-                        set({
-                          customFields: draft.customFields.map((x) =>
-                            x.id === f.id ? { ...x, value: e.target.value } : x
-                          ),
-                        })
-                      }
-                    />
-                    <button
-                      onClick={() => set({ customFields: draft.customFields.filter((x) => x.id !== f.id) })}
-                      aria-label={`Remove field ${f.label || "unnamed"}`}
-                      className="shrink-0 rounded-lg border border-line px-2.5 text-mist hover:text-punch"
-                    >
-                      ✕
-                    </button>
                   </div>
                 ))}
               </div>
@@ -394,10 +446,11 @@ export function IdolForm({ editId }: { editId?: string }) {
             </p>
           )}
           <button
-            onClick={save}
-            className="mt-4 w-full rounded-lg bg-punch px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-punch/90"
+            onClick={() => void save()}
+            disabled={busy}
+            className="mt-4 w-full rounded-lg bg-punch px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-punch/90 disabled:opacity-50"
           >
-            {editing ? "Save changes" : "Add to database"}
+            {busy ? "Saving…" : editing ? "Save changes" : "Add to database"}
           </button>
           {editing && (
             <button
@@ -409,6 +462,112 @@ export function IdolForm({ editId }: { editId?: string }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Group field with closest-match suggestions. Matching is case-insensitive,
+ * so typing "ive" surfaces canonical "IVE". Picking a suggestion (or typing
+ * an exact match) stores the canonical spelling; a brand-new name is
+ * auto-added as a group entry on save.
+ */
+function GroupCombobox({
+  value,
+  groups,
+  onChange,
+}: {
+  value: string;
+  groups: GroupEntry[];
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+
+  const q = value.trim().toLowerCase();
+  const exact = q ? groups.find((g) => g.name.toLowerCase() === q) : undefined;
+  const suggestions = (q
+    ? groups.filter((g) => g.name.toLowerCase().includes(q) && g.name.toLowerCase() !== q)
+    : groups
+  ).slice(0, 8);
+  const hi = suggestions.length > 0 ? highlight % suggestions.length : 0;
+
+  const pick = (name: string) => {
+    onChange(name);
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <label className={labelCls} htmlFor="f-group">Group</label>
+      <input
+        id="f-group"
+        className={inputCls}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setHighlight(0);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown" && suggestions.length > 0) {
+            e.preventDefault();
+            setHighlight((h) => (h + 1) % suggestions.length);
+          } else if (e.key === "ArrowUp" && suggestions.length > 0) {
+            e.preventDefault();
+            setHighlight((h) => (h - 1 + suggestions.length) % suggestions.length);
+          } else if (e.key === "Enter" && open && suggestions.length > 0) {
+            e.preventDefault();
+            pick(suggestions[hi].name);
+          } else if (e.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls="group-suggest"
+        aria-autocomplete="list"
+        placeholder="IVE, NOVA9, or Solo"
+        autoComplete="off"
+      />
+      {open && suggestions.length > 0 && (
+        <ul
+          id="group-suggest"
+          role="listbox"
+          className="absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-auto rounded-lg border border-line bg-paper py-1 shadow-lg"
+        >
+          {suggestions.map((g, i) => (
+            <li
+              key={g.id}
+              role="option"
+              aria-selected={i === hi}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                pick(g.name);
+              }}
+              onMouseEnter={() => setHighlight(i)}
+              className={
+                i === hi
+                  ? "cursor-pointer bg-sleeve px-3 py-1.5 text-[14px] font-medium"
+                  : "cursor-pointer px-3 py-1.5 text-[14px] text-mist"
+              }
+            >
+              {g.name}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-1 text-[12px] text-mist">
+        {exact ? (
+          <>Matched canonical spelling: <strong>{exact.name}</strong></>
+        ) : q ? (
+          <>New group — “{value.trim()}” will be added automatically on save.</>
+        ) : (
+          "Start typing to match an existing group."
+        )}
+      </p>
     </div>
   );
 }

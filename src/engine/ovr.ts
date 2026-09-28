@@ -105,7 +105,7 @@ export interface CustomField {
 }
 
 export interface Idol {
-  id: string;
+  id: number;
   stageName: string;
   realName?: string;
   group: string;
@@ -115,6 +115,9 @@ export interface Idol {
   agency?: string;
   bio: string;
   photo?: string;
+  /** storage object path in the idol-cards bucket (Supabase-backed) */
+  photoPath?: string;
+  photoKind?: "image" | "video";
   roles: string[]; // ranked, index 0 = primary
   attrs: Record<string, number>; // atomic key -> 50..99
   popularity: number; // 0..100 pts

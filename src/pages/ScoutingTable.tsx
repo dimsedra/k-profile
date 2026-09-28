@@ -52,7 +52,7 @@ function statTone(v: number) {
 }
 
 export function ScoutingTable() {
-  const { idols, config } = useStore();
+  const { idols, config, ready } = useStore();
   const [gender, setGender] = useState<"All" | "Male" | "Female">("All");
   const [gen, setGen] = useState<"All" | 1 | 2 | 3 | 4 | 5>("All");
   const [role, setRole] = useState("All");
@@ -98,6 +98,14 @@ export function ScoutingTable() {
       return [...prev, { key, dir: initial }];
     });
   };
+
+  if (!ready) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <p className="py-20 text-center font-display font-semibold">Loading scouting table…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">

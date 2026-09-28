@@ -4,7 +4,7 @@ import { ovrOf } from "../engine/ovr";
 import { PhotoCard } from "../components/ui";
 
 export function Binder() {
-  const { idols, config } = useStore();
+  const { idols, config, ready } = useStore();
 
   const cards = useMemo(
     () =>
@@ -13,6 +13,14 @@ export function Binder() {
         .sort((a, b) => b.ovr - a.ovr),
     [idols, config]
   );
+
+  if (!ready) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <p className="py-20 text-center font-display font-semibold">Loading binder…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">

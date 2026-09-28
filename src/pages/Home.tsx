@@ -4,7 +4,7 @@ import { ovrOf, roleLabel } from "../engine/ovr";
 import { OvrBadge, PhotoCard, Portrait } from "../components/ui";
 
 export function Home() {
-  const { idols, config } = useStore();
+  const { idols, config, ready } = useStore();
 
   const rated = useMemo(
     () =>
@@ -26,6 +26,14 @@ export function Home() {
     [idols]
   );
   const soloists = idols.filter((i) => i.group === "Solo").length;
+
+  if (!ready) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+        <p className="font-display font-semibold">Loading catalog…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -133,7 +141,7 @@ function HighlightCard({
   metricLabel,
 }: {
   heading: string;
-  idolId: string;
+  idolId: number;
   portrait: React.ReactNode;
   name: string;
   sub: string;

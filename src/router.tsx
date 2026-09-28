@@ -7,6 +7,7 @@ export type Route =
   | { name: "idol"; id: string }
   | { name: "add" }
   | { name: "edit"; id: string }
+  | { name: "login" }
   | { name: "settings" };
 
 export function parseHash(hash: string): Route {
@@ -22,6 +23,8 @@ export function parseHash(hash: string): Route {
       return { name: "add" };
     case "edit":
       return parts[1] ? { name: "edit", id: parts[1] } : { name: "add" };
+    case "login":
+      return { name: "login" };
     case "settings":
       return { name: "settings" };
     default:

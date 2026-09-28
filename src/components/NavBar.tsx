@@ -1,5 +1,6 @@
 import { cn } from "../utils/cn";
 import type { Route } from "../router";
+import { useStore } from "../store";
 
 const LINKS: { label: string; href: string; match: string[] }[] = [
   { label: "Home", href: "#/", match: ["home"] },
@@ -8,6 +9,7 @@ const LINKS: { label: string; href: string; match: string[] }[] = [
 ];
 
 export function NavBar({ route }: { route: Route }) {
+  const { userEmail, isAdmin } = useStore();
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
@@ -48,6 +50,18 @@ export function NavBar({ route }: { route: Route }) {
             )}
           >
             + Add Idol
+          </a>
+          <a
+            href="#/login"
+            aria-current={route.name === "login" ? "page" : undefined}
+            className={cn(
+              "whitespace-nowrap rounded-lg px-3 py-1.5 text-[14px] font-medium transition-colors",
+              route.name === "login"
+                ? "bg-ink text-white"
+                : "text-mist hover:bg-sleeve hover:text-ink"
+            )}
+          >
+            {userEmail ? (isAdmin ? "Admin" : "Account") : "Sign in"}
           </a>
           <a
             href="#/settings"
