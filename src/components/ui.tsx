@@ -2,6 +2,78 @@ import type { ReactNode } from "react";
 import { cn } from "../utils/cn";
 import { tierOf, roleLabel, type Idol } from "../engine/ovr";
 
+/* --------------------------- search input --------------------------- */
+
+export function SearchInput({
+  value,
+  onChange,
+  onKeyDown,
+  onFocus,
+  onBlur,
+  placeholder,
+  ariaLabel,
+  inputId,
+  role,
+  ariaExpanded,
+  ariaControls,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  placeholder?: string;
+  ariaLabel: string;
+  inputId?: string;
+  role?: string;
+  ariaExpanded?: boolean;
+  ariaControls?: string;
+  className?: string;
+  dense?: boolean;
+}) {
+  return (
+    <div className={cn("relative", className)}>
+      <svg
+        aria-hidden
+        viewBox="0 0 20 20"
+        fill="none"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mist"
+      >
+        <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M13.5 13.5 17 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+      <input
+        id={inputId}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        role={role}
+        aria-expanded={ariaExpanded}
+        aria-controls={ariaControls}
+        autoComplete="off"
+        className={cn(
+          "w-full rounded-xl border border-line bg-paper placeholder:text-mist/60 focus:border-punch/50 focus:outline-none focus:ring-2 focus:ring-punch/15",
+          dense ? "py-1.5 pl-9 pr-8 text-[14px] shadow-none" : "py-2.5 pl-9 pr-9 text-[15px] shadow-sm"
+        )}
+      />
+      {value && (
+        <button
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+          className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-sleeve text-[11px] text-mist hover:bg-line hover:text-ink"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ---------------------------- OVR badge --------------------------- */
 
 export function OvrBadge({

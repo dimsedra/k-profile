@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { ovrOf } from "../engine/ovr";
-import { PhotoCard } from "../components/ui";
+import { PhotoCard, SearchInput } from "../components/ui";
 
 export function Binder() {
   const { idols, config, ready } = useStore();
@@ -47,16 +47,18 @@ export function Binder() {
         </p>
       </div>
 
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") setQuery("");
-        }}
-        placeholder="Search stage name, real name, or group…"
-        aria-label="Search photocards"
-        className="mt-6 w-full max-w-md rounded-xl border border-line bg-paper px-4 py-2.5 text-[15px] placeholder:text-mist/60 focus:border-ink/40"
-      />
+      <div className="mt-6 flex justify-end">
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setQuery("");
+          }}
+          placeholder="Search stage name, real name, or group…"
+          ariaLabel="Search photocards"
+          className="w-full max-w-md"
+        />
+      </div>
 
       {cards.length === 0 ? (
         <div className="mt-16 rounded-2xl border border-line bg-paper p-12 text-center">

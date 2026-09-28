@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "../store";
 import { ovrOf } from "../engine/ovr";
-import { OvrBadge, Portrait } from "./ui";
+import { OvrBadge, Portrait, SearchInput } from "./ui";
 import { navigate } from "../router";
 
 /**
@@ -72,10 +72,10 @@ export function SearchBox() {
 
   return (
     <div ref={boxRef} className="relative min-w-0">
-      <input
+      <SearchInput
         value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
+        onChange={(v) => {
+          setQuery(v);
           setOpen(true);
         }}
         onFocus={() => q && setOpen(true)}
@@ -86,12 +86,11 @@ export function SearchBox() {
           }
         }}
         placeholder="Search idols or groups…"
-        aria-label="Search idols or groups"
+        ariaLabel="Search idols or groups"
         role="combobox"
-        aria-expanded={open && !!q}
-        aria-controls="global-search-results"
-        autoComplete="off"
-        className="w-full rounded-lg border border-line bg-sleeve px-3 py-1.5 text-[14px] placeholder:text-mist/60 focus:border-ink/40 focus:bg-paper"
+        ariaExpanded={open && !!q}
+        ariaControls="global-search-results"
+        dense
       />
       {open && q && (
         <ul

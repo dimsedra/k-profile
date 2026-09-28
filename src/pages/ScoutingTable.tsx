@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "../store";
 import { computeOvr, roleLabel, ROLES, type CategoryKey, type Idol } from "../engine/ovr";
-import { OvrBadge, Portrait, statTone } from "../components/ui";
+import { OvrBadge, Portrait, SearchInput, statTone } from "../components/ui";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
 
@@ -186,14 +186,14 @@ export function ScoutingTable() {
         </p>
       </div>
 
-      {/* Toolbar: search + filter panel */}
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <input
+      {/* Toolbar: search + filter panel, right-aligned */}
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+        <SearchInput
           value={filters.search}
-          onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+          onChange={(v) => setFilters((f) => ({ ...f, search: v }))}
           placeholder="Search name or group…"
-          aria-label="Search table"
-          className="w-full max-w-xs rounded-lg border border-line bg-paper px-3 py-1.5 text-[14px] placeholder:text-mist/60 focus:border-ink/40"
+          ariaLabel="Search table"
+          className="w-full max-w-xs"
         />
         <div ref={filterRef} className="relative">
           <button
@@ -213,7 +213,7 @@ export function ScoutingTable() {
             <div
               role="dialog"
               aria-label="Table filters"
-              className="absolute left-0 top-full z-50 mt-1.5 max-h-[70vh] w-80 space-y-4 overflow-auto rounded-xl border border-line bg-paper p-4 shadow-lg"
+              className="absolute right-0 top-full z-50 mt-1.5 max-h-[70vh] w-80 space-y-4 overflow-auto rounded-xl border border-line bg-paper p-4 shadow-lg"
             >
               <FilterGroupSearch
                 options={groups.map((g) => g.name)}
