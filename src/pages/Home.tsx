@@ -64,12 +64,10 @@ export function Home() {
       {/* Hero — giant type left, tilted top card right */}
       <div className="flex flex-col items-start gap-10 lg:flex-row lg:items-center lg:gap-16">
         <div className="max-w-xl">
-          <h1 className="font-display text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl">
-            Scout idols like
+          <h1 className="text-balance font-display text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl">
+            Scout idols like athletes.
             <br />
-            athletes. Keep them
-            <br />
-            like <span className="text-punch">photocards.</span>
+            Keep them like <span className="text-punch">photocards.</span>
           </h1>
           <p className="mt-6 max-w-md text-[15px] leading-relaxed text-mist">
             K-Profile keeps a scouting sheet on every idol you follow — twenty
