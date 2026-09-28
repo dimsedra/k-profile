@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "../store";
 import { computeOvr, roleLabel, ROLES, type CategoryKey, type Idol } from "../engine/ovr";
 import { OvrBadge, Portrait, statTone } from "../components/ui";
@@ -43,12 +43,57 @@ function valueOf(row: Row, key: SortKey): string | number {
   }
 }
 
+const CATEGORIES_KEYS = ["vocal", "rap", "dance", "stage", "visual"] as const;
+
+interface TableFilters {
+  genders: ("Male" | "Female")[];
+  generations: number[];
+  roles: string[];
+  groups: string[];
+  ovrMin: number | null;
+  ovrMax: number | null;
+  popMin: number | null;
+  catMin: Record<CategoryKey, number | null>;
+  search: string;
+}
+
+const EMPTY_FILTERS: TableFilters = {
+  genders: [],
+  generations: [],
+  roles: [],
+  groups: [],
+  ovrMin: null,
+  ovrMax: null,
+  popMin: null,
+  catMin: { vocal: null, rap: null, dance: null, stage: null, visual: null },
+  search: "",
+};
+
+const toggleIn = <T,>(list: T[], v: T): T[] =>
+  list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+
 export function ScoutingTable() {
-  const { idols, config, ready } = useStore();
-  const [gender, setGender] = useState<"All" | "Male" | "Female">("All");
-  const [gen, setGen] = useState<"All" | 1 | 2 | 3 | 4 | 5>("All");
-  const [role, setRole] = useState("All");
+  const { idols, config, ready, groups } = useStore();
   const [sorts, setSorts] = useState<SortSpec[]>([{ key: "ovr", dir: -1 }]);
+  const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+    const onPointer = (e: PointerEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFilterOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [filterOpen]);
 
   const rows = useMemo<Row[]>(
     () =>
@@ -61,9 +106,28 @@ export function ScoutingTable() {
 
   const visible = useMemo(() => {
     let out = rows;
-    if (gender !== "All") out = out.filter((r) => r.idol.gender === gender);
-    if (gen !== "All") out = out.filter((r) => r.idol.generation === gen);
-    if (role !== "All") out = out.filter((r) => r.idol.roles.includes(role));
+    const sq = filters.search.trim().toLowerCase();
+    if (sq)
+      out = out.filter(
+        (r) =>
+          r.idol.stageName.toLowerCase().includes(sq) ||
+          (r.idol.realName ?? "").toLowerCase().includes(sq) ||
+          r.idol.group.toLowerCase().includes(sq)
+      );
+    if (filters.genders.length > 0) out = out.filter((r) => filters.genders.includes(r.idol.gender));
+    if (filters.generations.length > 0)
+      out = out.filter((r) => filters.generations.includes(r.idol.generation));
+    if (filters.roles.length > 0)
+      out = out.filter((r) => r.idol.roles.some((x) => filters.roles.includes(x)));
+    if (filters.groups.length > 0) out = out.filter((r) => filters.groups.includes(r.idol.group));
+    if (filters.ovrMin !== null) out = out.filter((r) => r.ovr >= (filters.ovrMin as number));
+    if (filters.ovrMax !== null) out = out.filter((r) => r.ovr <= (filters.ovrMax as number));
+    if (filters.popMin !== null)
+      out = out.filter((r) => r.idol.popularity >= (filters.popMin as number));
+    (CATEGORIES_KEYS as readonly CategoryKey[]).forEach((k) => {
+      const m = filters.catMin[k];
+      if (m !== null) out = out.filter((r) => Math.round(r.cats[k]) >= m);
+    });
     return [...out].sort((a, b) => {
       for (const s of sorts) {
         const va = valueOf(a, s.key);
@@ -73,7 +137,16 @@ export function ScoutingTable() {
       }
       return 0;
     });
-  }, [rows, gender, gen, role, sorts]);
+  }, [rows, filters, sorts]);
+
+  const activeFilterCount =
+    (filters.genders.length > 0 ? 1 : 0) +
+    (filters.generations.length > 0 ? 1 : 0) +
+    (filters.roles.length > 0 ? 1 : 0) +
+    (filters.groups.length > 0 ? 1 : 0) +
+    (filters.ovrMin !== null || filters.ovrMax !== null ? 1 : 0) +
+    (filters.popMin !== null ? 1 : 0) +
+    (Object.values(filters.catMin).some((v) => v !== null) ? 1 : 0);
 
   const toggleSort = (key: SortKey, additive: boolean) => {
     setSorts((prev) => {
@@ -113,31 +186,151 @@ export function ScoutingTable() {
         </p>
       </div>
 
-      {/* Filter bar */}
+      {/* Toolbar: search + filter panel */}
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <Segmented
-          value={gender}
-          options={["All", "Male", "Female"] as const}
-          onChange={setGender}
-          name="Gender"
+        <input
+          value={filters.search}
+          onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+          placeholder="Search name or group…"
+          aria-label="Search table"
+          className="w-full max-w-xs rounded-lg border border-line bg-paper px-3 py-1.5 text-[14px] placeholder:text-mist/60 focus:border-ink/40"
         />
-        <Segmented
-          value={gen}
-          options={["All", 1, 2, 3, 4, 5] as const}
-          onChange={setGen}
-          name="Generation"
-        />
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          aria-label="Filter by role"
-          className="rounded-lg border border-line bg-paper px-3 py-1.5 text-[14px] font-medium"
-        >
-          <option value="All">Every role</option>
-          {ROLES.map((r) => (
-            <option key={r.id} value={r.id}>{r.label}</option>
-          ))}
-        </select>
+        <div ref={filterRef} className="relative">
+          <button
+            onClick={() => setFilterOpen((o) => !o)}
+            aria-haspopup="dialog"
+            aria-expanded={filterOpen}
+            className={cn(
+              "rounded-lg border px-3 py-1.5 text-[14px] font-medium",
+              activeFilterCount > 0
+                ? "border-ink bg-ink text-white"
+                : "border-line bg-paper text-mist hover:text-ink"
+            )}
+          >
+            Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
+          </button>
+          {filterOpen && (
+            <div
+              role="dialog"
+              aria-label="Table filters"
+              className="absolute left-0 top-full z-50 mt-1.5 max-h-[70vh] w-80 space-y-4 overflow-auto rounded-xl border border-line bg-paper p-4 shadow-lg"
+            >
+              <FilterGroupSearch
+                options={groups.map((g) => g.name)}
+                selected={filters.groups}
+                onToggle={(name) => setFilters((f) => ({ ...f, groups: toggleIn(f.groups, name) }))}
+              />
+              <div className="flex items-center gap-2">
+                <span className="w-24 shrink-0 text-[13px] font-medium">OVR</span>
+                <input
+                  type="number" min={40} max={99} placeholder="Min" aria-label="Minimum OVR"
+                  value={filters.ovrMin ?? ""}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, ovrMin: e.target.value === "" ? null : Number(e.target.value) }))
+                  }
+                  className="w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px]"
+                />
+                <input
+                  type="number" min={40} max={99} placeholder="Max" aria-label="Maximum OVR"
+                  value={filters.ovrMax ?? ""}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, ovrMax: e.target.value === "" ? null : Number(e.target.value) }))
+                  }
+                  className="w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-24 shrink-0 text-[13px] font-medium">Popularity ≥</span>
+                <input
+                  type="number" min={0} max={100} placeholder="0" aria-label="Minimum popularity"
+                  value={filters.popMin ?? ""}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, popMin: e.target.value === "" ? null : Number(e.target.value) }))
+                  }
+                  className="w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px]"
+                />
+              </div>
+              {(Object.keys(filters.catMin) as CategoryKey[]).map((k) => (
+                <div key={k} className="flex items-center gap-2">
+                  <span className="w-24 shrink-0 text-[13px] font-medium capitalize">{k} ≥</span>
+                  <input
+                    type="number" min={40} max={99} placeholder="—" aria-label={`Minimum ${k}`}
+                    value={filters.catMin[k] ?? ""}
+                    onChange={(e) =>
+                      setFilters((f) => ({
+                        ...f,
+                        catMin: { ...f.catMin, [k]: e.target.value === "" ? null : Number(e.target.value) },
+                      }))
+                    }
+                    className="w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px]"
+                  />
+                </div>
+              ))}
+              <div>
+                <p className="mb-1.5 text-[13px] font-medium">Gender</p>
+                <div className="flex gap-1.5">
+                  {(["Male", "Female"] as const).map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setFilters((f) => ({ ...f, genders: toggleIn(f.genders, g) }))}
+                      className={cn(
+                        "rounded-md px-3 py-1 text-[13px] font-medium",
+                        filters.genders.includes(g)
+                          ? "bg-ink text-white"
+                          : "bg-sleeve text-mist hover:text-ink"
+                      )}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-1.5 text-[13px] font-medium">Generation</p>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4, 5].map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setFilters((f) => ({ ...f, generations: toggleIn(f.generations, g) }))}
+                      className={cn(
+                        "rounded-md px-3 py-1 text-[13px] font-medium",
+                        filters.generations.includes(g)
+                          ? "bg-ink text-white"
+                          : "bg-sleeve text-mist hover:text-ink"
+                      )}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-1.5 text-[13px] font-medium">Roles held</p>
+                <div className="max-h-36 space-y-1 overflow-auto">
+                  {ROLES.map((r) => (
+                    <label key={r.id} className="flex cursor-pointer items-center gap-2 text-[13px]">
+                      <input
+                        type="checkbox"
+                        checked={filters.roles.includes(r.id)}
+                        onChange={() => setFilters((f) => ({ ...f, roles: toggleIn(f.roles, r.id) }))}
+                        className="h-4 w-4"
+                      />
+                      <span className={filters.roles.includes(r.id) ? "font-medium" : "text-mist"}>
+                        {r.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setFilters(EMPTY_FILTERS)}
+                className="w-full rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-mist hover:text-punch"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -219,35 +412,61 @@ export function ScoutingTable() {
   );
 }
 
-function Segmented<T extends string | number>({
-  value,
+function FilterGroupSearch({
   options,
-  onChange,
-  name,
+  selected,
+  onToggle,
 }: {
-  value: T | "All";
-  options: readonly (T | "All")[];
-  onChange: (v: any) => void;
-  name: string;
+  options: string[];
+  selected: string[];
+  onToggle: (name: string) => void;
 }) {
+  const [q, setQ] = useState("");
+  const query = q.trim().toLowerCase();
+  const shown = (query
+    ? options.filter((o) => o.toLowerCase().includes(query))
+    : options
+  ).slice(0, 12);
   return (
-    <div
-      role="group"
-      aria-label={name}
-      className="flex rounded-lg border border-line bg-paper p-0.5"
-    >
-      {options.map((opt) => (
-        <button
-          key={String(opt)}
-          onClick={() => onChange(opt)}
-          className={cn(
-            "rounded-md px-3 py-1 text-[13px] font-medium transition-colors",
-            value === opt ? "bg-ink text-white" : "text-mist hover:text-ink"
-          )}
-        >
-          {String(opt)}
-        </button>
-      ))}
+    <div>
+      <p className="mb-1.5 text-[13px] font-medium">Groups</p>
+      {selected.length > 0 && (
+        <div className="mb-1.5 flex flex-wrap gap-1">
+          {selected.map((name) => (
+            <button
+              key={name}
+              onClick={() => onToggle(name)}
+              aria-label={`Remove ${name} filter`}
+              className="rounded-md bg-ink px-2 py-0.5 text-[12px] font-medium text-white"
+            >
+              {name} ✕
+            </button>
+          ))}
+        </div>
+      )}
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Type to filter groups…"
+        aria-label="Filter group options"
+        className="mb-1.5 w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px] placeholder:text-mist/60"
+      />
+      <div className="max-h-32 space-y-1 overflow-auto">
+        {shown.map((name) => (
+          <label key={name} className="flex cursor-pointer items-center gap-2 text-[13px]">
+            <input
+              type="checkbox"
+              checked={selected.includes(name)}
+              onChange={() => onToggle(name)}
+              className="h-4 w-4"
+            />
+            <span className={selected.includes(name) ? "font-medium" : "text-mist"}>
+              {name}
+            </span>
+          </label>
+        ))}
+        {shown.length === 0 && <p className="text-[12px] text-mist">No groups match.</p>}
+      </div>
     </div>
   );
 }
