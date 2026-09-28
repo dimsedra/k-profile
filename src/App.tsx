@@ -6,6 +6,7 @@ import { Home } from "./pages/Home";
 import { IdolDetail } from "./pages/IdolDetail";
 import { IdolForm } from "./pages/IdolForm";
 import { GroupDetail } from "./pages/GroupDetail";
+import { GroupForm } from "./pages/GroupForm";
 import { Login } from "./pages/Login";
 import { ScoutingTable } from "./pages/ScoutingTable";
 import { Settings } from "./pages/Settings";
@@ -22,6 +23,7 @@ function Screen() {
         {route.name === "idol" && <IdolDetail id={Number(route.id)} />}
         {route.name === "group" && <GroupDetail id={Number(route.id)} />}
         {route.name === "add" && <IdolForm key="add" />}
+        {route.name === "addGroup" && <GroupForm key="add-group" />}
         {route.name === "edit" && <IdolForm key={route.id} editId={Number(route.id)} />}
         {route.name === "login" && <Login />}
         {route.name === "settings" && <Settings />}

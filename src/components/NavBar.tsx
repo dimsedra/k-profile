@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { cn } from "../utils/cn";
 import type { Route } from "../router";
 import { useStore } from "../store";
@@ -10,6 +11,37 @@ const LINKS: { label: string; href: string; match: string[] }[] = [
 
 export function NavBar({ route }: { route: Route }) {
   const { userEmail, isAdmin } = useStore();
+  const [addOpen, setAddOpen] = useState(false);
+  const addRef = useRef<HTMLDivElement>(null);
+  const addActive = route.name === "add" || route.name === "edit" || route.name === "addGroup";
+
+  useEffect(() => {
+    if (!addOpen) return;
+    const onPointer = (e: PointerEvent) => {
+      if (addRef.current && !addRef.current.contains(e.target as Node)) setAddOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAddOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [addOpen]);
+
+  const onMenuKey = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const items = Array.from(
+      addRef.current?.querySelectorAll('[role="menuitem"]') ?? []
+    ) as HTMLElement[];
+    if (items.length === 0) return;
+    const idx = items.indexOf(document.activeElement as HTMLElement);
+    const next = e.key === "ArrowDown" ? (idx + 1) % items.length : (idx - 1 + items.length) % items.length;
+    items[next].focus();
+  };
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
@@ -40,17 +72,46 @@ export function NavBar({ route }: { route: Route }) {
               </a>
             );
           })}
-          <a
-            href="#/add"
-            className={cn(
-              "whitespace-nowrap rounded-lg px-3 py-1.5 text-[14px] font-semibold transition-colors",
-              route.name === "add" || route.name === "edit"
-                ? "bg-punch text-white"
-                : "bg-punch/10 text-punch hover:bg-punch hover:text-white"
+          <div ref={addRef} className="relative shrink-0">
+            <button
+              onClick={() => setAddOpen((o) => !o)}
+              aria-haspopup="menu"
+              aria-expanded={addOpen}
+              className={cn(
+                "whitespace-nowrap rounded-lg px-3 py-1.5 text-[14px] font-semibold transition-colors",
+                addActive
+                  ? "bg-punch text-white"
+                  : "bg-punch/10 text-punch hover:bg-punch hover:text-white"
+              )}
+            >
+              + Add
+            </button>
+            {addOpen && (
+              <div
+                role="menu"
+                aria-label="Add"
+                onKeyDown={onMenuKey}
+                className="absolute right-0 top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl border border-line bg-paper py-1 shadow-lg"
+              >
+                <a
+                  role="menuitem"
+                  href="#/add"
+                  onClick={() => setAddOpen(false)}
+                  className="block px-4 py-2 text-[14px] font-medium hover:bg-sleeve"
+                >
+                  Idol
+                </a>
+                <a
+                  role="menuitem"
+                  href="#/add-group"
+                  onClick={() => setAddOpen(false)}
+                  className="block px-4 py-2 text-[14px] font-medium hover:bg-sleeve"
+                >
+                  Group
+                </a>
+              </div>
             )}
-          >
-            + Add Idol
-          </a>
+          </div>
           <a
             href="#/login"
             aria-current={route.name === "login" ? "page" : undefined}
