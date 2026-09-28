@@ -61,6 +61,7 @@ export interface GroupEntry {
   photo?: string;
   photoPath?: string;
   photoKind?: "image" | "video";
+  photoFocus: { x: number; y: number };
   bio: string;
   debutYear?: number;
   agency: string;
@@ -204,7 +205,7 @@ interface Store {
   ) => Promise<{ id?: number; error?: string }>;
   updateGroup: (
     id: number,
-    patch: { bio: string; debutYear?: number; agency: string; fandomName: string },
+    patch: { bio: string; debutYear?: number; agency: string; fandomName: string; photoFocus?: { x: number; y: number } },
     opts?: { photoFile?: File | null; removePhoto?: boolean }
   ) => Promise<string | null>;
   deleteFieldDef: (id: number) => Promise<string | null>;
@@ -305,6 +306,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           photo: g.photo_path ? cardPhotoUrl(g.photo_path as string) : undefined,
           photoPath: (g.photo_path as string | null) ?? undefined,
           photoKind: ((g.photo_kind as string) ?? "image") as GroupEntry["photoKind"],
+          photoFocus: {
+            x: Number(g.photo_focus_x ?? 50),
+            y: Number(g.photo_focus_y ?? 50),
+          },
           bio: (g.bio as string) ?? "",
           debutYear: (g.debut_year as number | null) ?? undefined,
           agency: (g.agency as string | null) ?? "",
@@ -648,7 +653,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const updateGroup = useCallback(
     async (
       id: number,
-      patch: { bio: string; debutYear?: number; agency: string; fandomName: string },
+      patch: { bio: string; debutYear?: number; agency: string; fandomName: string; photoFocus?: { x: number; y: number } },
       opts?: { photoFile?: File | null; removePhoto?: boolean }
     ): Promise<string | null> => {
       try {
@@ -659,6 +664,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           agency: patch.agency || null,
           fandom_name: patch.fandomName || null,
         };
+        if (patch.photoFocus) {
+          row.photo_focus_x = Math.max(0, Math.min(100, Math.round(patch.photoFocus.x)));
+          row.photo_focus_y = Math.max(0, Math.min(100, Math.round(patch.photoFocus.y)));
+        }
         if (opts?.removePhoto) {
           row.photo_path = null;
           row.photo_kind = "image";

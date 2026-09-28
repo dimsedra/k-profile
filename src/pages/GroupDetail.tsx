@@ -23,7 +23,11 @@ export function GroupDetail({ id }: { id: number }) {
   const [removePhoto, setRemovePhoto] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
+  const [focus, setFocus] = useState({ x: 50, y: 50 });
+  const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   const group = groups.find((g) => g.id === id);
   const memberIds = useMemo(() => new Set(groupMemberIds(id)), [groupMemberIds, id]);
@@ -80,6 +84,33 @@ export function GroupDetail({ id }: { id: number }) {
     setError("");
   };
 
+  const moveFocus = (clientX: number, clientY: number) => {
+    const rect = bannerRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return;
+    setFocus({
+      x: Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100)),
+      y: Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100)),
+    });
+  };
+
+  const saveFocus = async () => {
+    setError("");
+    setBusy(true);
+    const msg = await updateGroup(
+      group.id,
+      {
+        bio: group.bio,
+        debutYear: group.debutYear,
+        agency: group.agency,
+        fandomName: group.fandomName,
+        photoFocus: focus,
+      }
+    );
+    setBusy(false);
+    if (msg) return setError(msg);
+    setAdjusting(false);
+  };
+
   const save = async () => {
     setError("");
     setBusy(true);
@@ -108,12 +139,34 @@ export function GroupDetail({ id }: { id: number }) {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       {/* Spotify-like artist header: wide banner, gradient, big name */}
-      <div className="relative overflow-hidden rounded-2xl border border-line">
+      <div
+        ref={bannerRef}
+        onPointerDown={(e) => {
+          if (!adjusting || !group.photo) return;
+          (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+          setDragging(true);
+          moveFocus(e.clientX, e.clientY);
+        }}
+        onPointerMove={(e) => {
+          if (adjusting && dragging) moveFocus(e.clientX, e.clientY);
+        }}
+        onPointerUp={() => setDragging(false)}
+        onPointerCancel={() => setDragging(false)}
+        className={
+          adjusting && group.photo
+            ? "relative cursor-move touch-none select-none overflow-hidden rounded-2xl border border-line"
+            : "relative overflow-hidden rounded-2xl border border-line"
+        }
+      >
         {group.photo ? (
           <img
             src={group.photo}
             alt={`${group.name} banner`}
+            draggable={false}
             className="h-56 w-full object-cover sm:h-72"
+            style={{
+              objectPosition: `${adjusting ? focus.x : group.photoFocus.x}% ${adjusting ? focus.y : group.photoFocus.y}%`,
+            }}
           />
         ) : (
           <div className="flex h-56 w-full items-center justify-center bg-gradient-to-br from-holo-soft via-sleeve to-punch-soft sm:h-72">
@@ -126,6 +179,11 @@ export function GroupDetail({ id }: { id: number }) {
           className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-transparent"
           aria-hidden
         />
+        {adjusting && (
+          <p className="absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink/70 px-3 py-1 text-[12px] font-semibold text-white">
+            Drag the photo to reposition
+          </p>
+        )}
         <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-4 p-5 sm:p-6">
           <div className="min-w-0">
             <p className="text-[12px] font-semibold uppercase tracking-widest text-white/70">
@@ -148,13 +206,48 @@ export function GroupDetail({ id }: { id: number }) {
         </div>
       </div>
 
-      {isAdmin && !editing && (
-        <button
-          onClick={startEdit}
-          className="mt-4 rounded-lg bg-ink px-3 py-2 text-[14px] font-semibold text-white hover:bg-ink/90"
-        >
-          Edit group
-        </button>
+      {isAdmin && !editing && !adjusting && (
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={startEdit}
+            className="rounded-lg bg-ink px-3 py-2 text-[14px] font-semibold text-white hover:bg-ink/90"
+          >
+            Edit group
+          </button>
+          {group.photo && (
+            <button
+              onClick={() => {
+                setFocus({ ...group.photoFocus });
+                setError("");
+                setAdjusting(true);
+              }}
+              className="rounded-lg border border-line bg-paper px-3 py-2 text-[14px] font-medium text-mist hover:text-ink"
+            >
+              Reposition cover
+            </button>
+          )}
+        </div>
+      )}
+
+      {adjusting && (
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            onClick={() => void saveFocus()}
+            disabled={busy}
+            className="rounded-lg bg-punch px-4 py-2 text-[14px] font-semibold text-white hover:bg-punch/90 disabled:opacity-50"
+          >
+            {busy ? "Saving…" : "Save position"}
+          </button>
+          <button
+            onClick={() => setAdjusting(false)}
+            className="rounded-lg border border-line bg-paper px-4 py-2 text-[14px] font-medium text-mist hover:text-ink"
+          >
+            Cancel
+          </button>
+          {error && (
+            <p role="alert" className="text-[13px] font-medium text-punch">{error}</p>
+          )}
+        </div>
       )}
 
       {editing && (
