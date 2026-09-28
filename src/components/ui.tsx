@@ -83,7 +83,7 @@ export function OvrBadge({
   className,
 }: {
   ovr: number;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   className?: string;
 }) {
   const tier = tierOf(ovr);
@@ -100,7 +100,9 @@ export function OvrBadge({
       ? "min-w-9 px-1.5 py-0.5 text-[13px] rounded-md"
       : size === "md"
         ? "min-w-11 px-2 py-1 text-base rounded-lg"
-        : "min-w-14 px-2.5 py-1.5 text-2xl rounded-xl";
+        : size === "lg"
+          ? "min-w-14 px-2.5 py-1.5 text-2xl rounded-xl"
+          : "min-w-20 px-3.5 py-2.5 text-5xl rounded-2xl";
   return (
     <span
       className={cn(
