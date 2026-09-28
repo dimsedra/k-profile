@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sleeve: #f5f4f9;
+  --color-paper: #ffffff;
+  --color-ink: #221e3f;
+  --color-mist: #6e6a87;
+  --color-line: #e4e2ee;
+  --color-punch: #e8326f;
+  --color-holo: #6c5ce8;
+  --color-holo-soft: #edeafd;
+  --color-punch-soft: #fdeaf1;
+
+  --font-display: "Unbounded", system-ui, sans-serif;
+  --font-body: "Archivo", system-ui, sans-serif;
+}
+
+html {
+  background: var(--color-sleeve);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Holographic foil edge — reserved for 90+ OVR photocards */
+.foil {
+  background: linear-gradient(
+    130deg,
+    #f39ac2 0%,
+    #6c5ce8 22%,
+    #63d6e4 45%,
+    #f5e29a 62%,
+    #e8326f 82%,
+    #8f7bf0 100%
+  );
+}
+
+.foil-sheen {
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.32) 44%,
+    rgba(255, 255, 255, 0.05) 55%,
+    transparent 70%
+  );
+}
+
+/* One page-load moment: the hero photocard settles into the binder */
+@keyframes card-settle {
+  from {
+    opacity: 0;
+    transform: rotate(6deg) translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(3deg) translateY(0);
+  }
+}
+
+.card-settle {
+  animation: card-settle 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-settle {
+    animation: none;
+    transform: rotate(3deg);
+  }
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-punch);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+input[type="range"] {
+  accent-color: var(--color-punch);
+}
+
+::selection {
+  background: var(--color-punch);
+  color: #fff;
+}
