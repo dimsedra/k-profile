@@ -43,6 +43,9 @@ export function Binder() {
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+          <p className="tnum text-[13px] text-mist sm:text-right">
+            {visible.length} of {cards.length} cards
+          </p>
           <SearchInput
             value={query}
             onChange={setQuery}
@@ -53,9 +56,6 @@ export function Binder() {
             ariaLabel="Search photocards"
             className="w-full sm:w-80"
           />
-          <p className="tnum text-[13px] text-mist sm:text-right">
-            {visible.length} of {cards.length} cards
-          </p>
         </div>
       </div>
 
