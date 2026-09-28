@@ -184,8 +184,13 @@ export function IdolDetail({ id }: { id: number }) {
               </Panel>
             ))}
             <Panel>
-              <StatBar label="Popularity" value={idol.popularity} strong />
-              <p className="mt-4 text-[12px] leading-relaxed text-mist">
+              <div className="mb-4 flex items-baseline justify-between gap-3 border-b border-line pb-3">
+                <span className="font-display text-[17px] font-bold">Popularity</span>
+                <span className={cn("font-display tnum text-2xl font-bold", statTone(idol.popularity))}>
+                  {idol.popularity}
+                </span>
+              </div>
+              <p className="text-[12px] leading-relaxed text-mist">
                 Popularity is measured in points from 0 to 100 and never dominates:
                 it drifts the overall rating by at most ±{config.driftMax} points.
               </p>
