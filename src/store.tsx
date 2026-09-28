@@ -198,6 +198,10 @@ interface Store {
   addFieldDef: (label: string) => Promise<string | null>;
   groupStats: (groupId: number) => GroupStats | null;
   groupMemberIds: (groupId: number) => number[];
+  addGroup: (
+    input: { name: string; bio: string; debutYear?: number; agency: string; fandomName: string },
+    photoFile?: File | null
+  ) => Promise<{ id?: number; error?: string }>;
   updateGroup: (
     id: number,
     patch: { bio: string; debutYear?: number; agency: string; fandomName: string },
@@ -578,6 +582,55 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const addGroup = useCallback(
+    async (
+      input: { name: string; bio: string; debutYear?: number; agency: string; fandomName: string },
+      photoFile?: File | null
+    ): Promise<{ id?: number; error?: string }> => {
+      try {
+        const sb = getSupabase();
+        const clean = input.name.trim();
+        if (!clean) return { error: "Group name is required." };
+        const { data: all, error: listErr } = await sb.from("groups").select("id,name");
+        if (listErr) throw listErr;
+        const hit = ((all ?? []) as { id: number; name: string }[]).find(
+          (g) => g.name.toLowerCase() === clean.toLowerCase()
+        );
+        if (hit) return { error: `“${clean}” already exists as a group.`, id: hit.id };
+        const { data: created, error } = await sb
+          .from("groups")
+          .insert({
+            name: clean,
+            bio: input.bio,
+            debut_year: input.debutYear ?? null,
+            agency: input.agency || null,
+            fandom_name: input.fandomName || null,
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+        const id = (created as { id: number }).id;
+        if (photoFile) {
+          const kind = photoFile.type.startsWith("video/") ? "video" : "image";
+          const { error: upErr } = await sb.storage
+            .from(PHOTO_BUCKET)
+            .upload(`group-${id}/portrait`, photoFile, { upsert: true, contentType: photoFile.type });
+          if (upErr) throw upErr;
+          await sb
+            .from("groups")
+            .update({ photo_path: `group-${id}/portrait`, photo_kind: kind })
+            .eq("id", id)
+            .throwOnError();
+        }
+        await refresh();
+        return { id };
+      } catch (e) {
+        return { error: errMsg(e, "Failed to add group.") };
+      }
+    },
+    [refresh]
+  );
+
   const groupStats = useCallback(
     (groupId: number) => {
       const ids = new Set(byGroup.current.get(groupId) ?? []);
@@ -658,6 +711,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       groupStats,
       groupMemberIds,
       updateGroup,
+      addGroup,
     }),
     [
       ready,
@@ -680,6 +734,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       groupStats,
       groupMemberIds,
       updateGroup,
+      addGroup,
     ]
   );
 
