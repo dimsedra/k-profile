@@ -181,21 +181,19 @@ export function ScoutingTable() {
             Click a column to sort. Shift-click adds a secondary sort. Click a row to open the full sheet.
           </p>
         </div>
-        <p className="tnum text-[13px] text-mist">
-          {visible.length} of {rows.length} idols shown
-        </p>
-      </div>
-
-      {/* Toolbar: search + filter panel, right-aligned */}
-      <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
-        <SearchInput
-          value={filters.search}
-          onChange={(v) => setFilters((f) => ({ ...f, search: v }))}
-          placeholder="Search name or group…"
-          ariaLabel="Search table"
-          className="w-full max-w-xs"
-        />
-        <div ref={filterRef} className="relative">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+          <p className="tnum text-[13px] text-mist sm:text-right">
+            {visible.length} of {rows.length} idols shown
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchInput
+              value={filters.search}
+              onChange={(v) => setFilters((f) => ({ ...f, search: v }))}
+              placeholder="Search name or group…"
+              ariaLabel="Search table"
+              className="w-full sm:w-64"
+            />
+            <div ref={filterRef} className="relative">
           <button
             onClick={() => setFilterOpen((o) => !o)}
             aria-haspopup="dialog"
@@ -330,6 +328,8 @@ export function ScoutingTable() {
               </button>
             </div>
           )}
+        </div>
+          </div>
         </div>
       </div>
 
