@@ -1,10 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { ovrOf } from "../engine/ovr";
-import { PhotoCard } from "../components/ui";
+import { OvrBadge, PhotoCard, Portrait } from "../components/ui";
+import { navigate } from "../router";
 
 export function Binder() {
-  const { idols, config, ready } = useStore();
+  const { idols, config, ready, groups, groupStats, groupMemberIds } = useStore();
+  const [query, setQuery] = useState("");
 
   const cards = useMemo(
     () =>
@@ -13,6 +15,21 @@ export function Binder() {
         .sort((a, b) => b.ovr - a.ovr),
     [idols, config]
   );
+
+  const q = query.trim().toLowerCase();
+  const idolHits = q
+    ? cards.filter(({ idol }) => idol.stageName.toLowerCase().includes(q)).slice(0, 8)
+    : [];
+  const groupHits = q
+    ? groups
+        .filter((g) => g.name.toLowerCase().includes(q))
+        .slice(0, 8)
+        .map((group) => ({
+          group,
+          stats: groupStats(group.id),
+          count: groupMemberIds(group.id).length,
+        }))
+    : [];
 
   if (!ready) {
     return (
@@ -34,7 +51,65 @@ export function Binder() {
         <p className="tnum text-[13px] text-mist">{cards.length} cards</p>
       </div>
 
-      {cards.length === 0 ? (
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setQuery("");
+          if (e.key === "Enter") {
+            const first = [...groupHits, ...idolHits][0];
+            if (first)
+              navigate("group" in first ? `/group/${first.group.id}` : `/idol/${first.idol.id}`);
+          }
+        }}
+        placeholder="Search idols or groups…"
+        aria-label="Search idols or groups"
+        className="mt-6 w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-[15px] placeholder:text-mist/60 focus:border-ink/40"
+      />
+
+      {q ? (
+        <ul role="listbox" aria-label="Search results" className="mt-6 space-y-2">
+          {groupHits.map(({ group, stats, count }) => (
+            <li key={`g-${group.id}`} role="option" aria-selected={false}>
+              <button
+                onClick={() => navigate(`/group/${group.id}`)}
+                className="flex w-full items-center gap-3 rounded-xl border border-line bg-paper p-3 text-left hover:border-ink/30"
+              >
+                <span className="rounded-md bg-holo px-1.5 py-0.5 text-[11px] font-bold text-white">
+                  Group
+                </span>
+                <span className="font-display text-[15px] font-semibold">{group.name}</span>
+                <span className="tnum text-[13px] text-mist">{count} members</span>
+                <span className="ml-auto">
+                  {stats ? <OvrBadge ovr={stats.ovr} size="sm" /> : <span className="text-mist">—</span>}
+                </span>
+              </button>
+            </li>
+          ))}
+          {idolHits.map(({ idol, ovr }) => (
+            <li key={`i-${idol.id}`} role="option" aria-selected={false}>
+              <button
+                onClick={() => navigate(`/idol/${idol.id}`)}
+                className="flex w-full items-center gap-3 rounded-xl border border-line bg-paper p-3 text-left hover:border-ink/30"
+              >
+                <span className="h-9 w-9 overflow-hidden rounded-lg">
+                  <Portrait idol={idol} className="h-full w-full" />
+                </span>
+                <span className="font-display text-[15px] font-semibold">{idol.stageName}</span>
+                <span className="text-[13px] text-mist">{idol.group}</span>
+                <span className="ml-auto">
+                  <OvrBadge ovr={ovr} size="sm" />
+                </span>
+              </button>
+            </li>
+          ))}
+          {groupHits.length === 0 && idolHits.length === 0 && (
+            <li className="px-4 py-12 text-center text-mist">
+              No matches for “{query.trim()}”.
+            </li>
+          )}
+        </ul>
+      ) : cards.length === 0 ? (
         <div className="mt-16 rounded-2xl border border-line bg-paper p-12 text-center">
           <p className="font-display font-semibold">The binder is empty</p>
           <p className="mt-2 text-[14px] text-mist">
