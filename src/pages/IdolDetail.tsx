@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { CATEGORIES, computeOvr, roleLabel } from "../engine/ovr";
-import { OvrBadge, Panel, PhotoCard, StatBar } from "../components/ui";
+import { Panel, PhotoCard, StatBar } from "../components/ui";
 import { navigate } from "../router";
 
 export function IdolDetail({ id }: { id: number }) {
@@ -119,7 +119,14 @@ export function IdolDetail({ id }: { id: number }) {
                 {idol.group} — {idol.roles.map((r, i) => `${i + 1}. ${roleLabel(r)}`).join(", ")}
               </p>
             </div>
-            <OvrBadge ovr={breakdown.ovr} size="lg" className="shrink-0" />
+            <div className="shrink-0 text-right">
+              <div className="font-display tnum text-5xl font-extrabold leading-none sm:text-6xl">
+                {breakdown.ovr}
+              </div>
+              <div className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-mist">
+                Overall
+              </div>
+            </div>
           </div>
 
           {/* How the rating is built */}
