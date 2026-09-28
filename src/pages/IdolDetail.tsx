@@ -112,10 +112,10 @@ export function IdolDetail({ id }: { id: number }) {
 
         {/* Right pane — the numbers */}
         <div>
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="truncate font-display text-2xl font-bold">{idol.stageName}</h1>
-              <p className="mt-1 truncate text-[14px] text-mist">
+          <div className="flex items-stretch justify-between gap-4">
+            <div className="flex min-w-0 flex-col justify-between py-0.5">
+              <h1 className="truncate font-display text-2xl font-bold leading-tight">{idol.stageName}</h1>
+              <p className="truncate text-[14px] text-mist">
                 {idol.group} — {idol.roles.map((r, i) => `${i + 1}. ${roleLabel(r)}`).join(", ")}
               </p>
             </div>
