@@ -53,7 +53,7 @@ export function NavBar({ route }: { route: Route }) {
             Scouting & Idol Database
           </span>
         </a>
-        <nav className="ml-auto flex items-center gap-1 overflow-x-auto">
+        <nav className="ml-auto flex flex-wrap items-center justify-end gap-1">
           {LINKS.map((l) => {
             const active = l.match.includes(route.name);
             return (
