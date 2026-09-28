@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import { useStore } from "../store";
-import { ovrOf, roleLabel } from "../engine/ovr";
+import { CATEGORIES, computeOvr, ovrOf, roleLabel } from "../engine/ovr";
 import { OvrBadge, PhotoCard, Portrait } from "../components/ui";
 
 export function Home() {
-  const { idols, config, ready } = useStore();
+  const { idols, config, ready, groups: groupList, groupStats, groupMemberIds } = useStore();
 
   const rated = useMemo(
     () =>
@@ -21,11 +21,35 @@ export function Home() {
     [rated]
   );
 
-  const groups = useMemo(
+  const groupCount = useMemo(
     () => new Set(idols.filter((i) => i.group !== "Solo").map((i) => i.group)).size,
     [idols]
   );
   const soloists = idols.filter((i) => i.group === "Solo").length;
+
+  const topGroup = useMemo(() => {
+    let best: { id: number; name: string; ovr: number; count: number } | null = null;
+    for (const g of groupList) {
+      const stats = groupStats(g.id);
+      if (!stats) continue;
+      const count = groupMemberIds(g.id).length;
+      if (!best || stats.ovr > best.ovr) best = { id: g.id, name: g.name, ovr: stats.ovr, count };
+    }
+    return best;
+  }, [groupList, groupStats, groupMemberIds]);
+
+  const leaders = useMemo(
+    () =>
+      CATEGORIES.map((cat) => {
+        let best: { idol: (typeof idols)[number]; value: number } | null = null;
+        for (const idol of idols) {
+          const v = computeOvr(idol, config).cats[cat.key];
+          if (!best || v > best.value) best = { idol, value: v };
+        }
+        return { cat, best };
+      }),
+    [idols, config]
+  );
 
   if (!ready) {
     return (
@@ -58,7 +82,7 @@ export function Home() {
               <dt className="mt-1 text-[13px] text-mist">idols cataloged</dt>
             </div>
             <div>
-              <dd className="font-display tnum text-3xl font-bold">{groups}</dd>
+              <dd className="font-display tnum text-3xl font-bold">{groupCount}</dd>
               <dt className="mt-1 text-[13px] text-mist">groups on file</dt>
             </div>
             {soloists > 0 && (
@@ -78,19 +102,38 @@ export function Home() {
 
       {/* Highlights */}
       {top && popular && (
-        <div className="mt-14 grid gap-4 sm:grid-cols-2">
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <HighlightCard
             heading="Top performer"
-            idolId={top.idol.id}
+            href={`#/idol/${top.idol.id}`}
             portrait={<Portrait idol={top.idol} className="h-full w-full" />}
             name={top.idol.stageName}
             sub={`${top.idol.group} — ${roleLabel(top.idol.roles[0] ?? "allRounder")}`}
             metric={<OvrBadge ovr={top.ovr} size="lg" />}
             metricLabel="overall rating"
           />
+          {topGroup && (
+            <HighlightCard
+              heading="Top group"
+              href={`#/group/${topGroup.id}`}
+              portrait={
+                <Portrait
+                  idol={{
+                    stageName: topGroup.name,
+                    photo: groupList.find((g) => g.id === topGroup.id)?.photo,
+                  }}
+                  className="h-full w-full"
+                />
+              }
+              name={topGroup.name}
+              sub={`${topGroup.count} members`}
+              metric={<OvrBadge ovr={topGroup.ovr} size="lg" />}
+              metricLabel="group rating"
+            />
+          )}
           <HighlightCard
             heading="Fandom powerhouse"
-            idolId={popular.idol.id}
+            href={`#/idol/${popular.idol.id}`}
             portrait={<Portrait idol={popular.idol} className="h-full w-full" />}
             name={popular.idol.stageName}
             sub={`${popular.idol.group} — ${roleLabel(popular.idol.roles[0] ?? "allRounder")}`}
@@ -101,6 +144,36 @@ export function Home() {
             }
             metricLabel="popularity pts"
           />
+        </div>
+      )}
+
+      {/* League leaders */}
+      {leaders.some((l) => l.best) && (
+        <div className="mt-14">
+          <h2 className="font-display text-[16px] font-semibold">League leaders</h2>
+          <p className="mt-1 text-[13px] text-mist">
+            Best in each category, across the whole catalog.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {leaders.map(
+              ({ cat, best }) =>
+                best && (
+                  <a
+                    key={cat.key}
+                    href={`#/idol/${best.idol.id}`}
+                    className="rounded-2xl border border-line bg-paper p-4 transition-colors hover:border-ink/30"
+                  >
+                    <p className="text-[13px] text-mist">{cat.label}</p>
+                    <p className="mt-1 truncate font-display text-[15px] font-semibold">
+                      {best.idol.stageName}
+                    </p>
+                    <p className="tnum mt-1 font-display text-2xl font-bold text-holo">
+                      {Math.round(best.value)}
+                    </p>
+                  </a>
+                )
+            )}
+          </div>
         </div>
       )}
 
@@ -133,7 +206,7 @@ export function Home() {
 
 function HighlightCard({
   heading,
-  idolId,
+  href,
   portrait,
   name,
   sub,
@@ -141,7 +214,7 @@ function HighlightCard({
   metricLabel,
 }: {
   heading: string;
-  idolId: number;
+  href: string;
   portrait: React.ReactNode;
   name: string;
   sub: string;
@@ -150,7 +223,7 @@ function HighlightCard({
 }) {
   return (
     <a
-      href={`#/idol/${idolId}`}
+      href={href}
       className="group flex items-center gap-4 rounded-2xl border border-line bg-paper p-4 transition-colors hover:border-ink/30"
     >
       <div className="h-20 w-14 shrink-0 overflow-hidden rounded-lg">{portrait}</div>
