@@ -341,6 +341,17 @@ export function GroupDetail({ id }: { id: number }) {
         </Panel>
       )}
 
+      <Panel className="mt-4" title="Profile">
+        <dl className="space-y-2.5">
+          {facts.map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-4 text-[14px]">
+              <dt className="text-mist">{k}</dt>
+              <dd className="text-right font-medium">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </Panel>
+
       {stats ? (
         <Panel className="mt-4" title="Combined stats (popularity-weighted)">
           <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
