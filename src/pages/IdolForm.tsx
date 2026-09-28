@@ -123,7 +123,7 @@ export function IdolForm({ editId }: { editId?: number }) {
 
   if (!ready) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
         <p className="font-display font-semibold">Loading…</p>
       </div>
     );
@@ -131,7 +131,7 @@ export function IdolForm({ editId }: { editId?: number }) {
 
   if (editId !== undefined && !editing) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
         <p className="font-display font-semibold">This scouting sheet doesn't exist</p>
         <p className="mt-2 text-[14px] text-mist">
           The idol may have been removed from the database.
@@ -161,7 +161,7 @@ export function IdolForm({ editId }: { editId?: number }) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <h1 className="font-display text-2xl font-bold">
         {editing ? `Edit ${editing.stageName}'s sheet` : "New scouting sheet"}
       </h1>

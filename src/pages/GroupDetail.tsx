@@ -41,7 +41,7 @@ export function GroupDetail({ id }: { id: number }) {
 
   if (!ready) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <p className="py-20 text-center font-display font-semibold">Loading group…</p>
       </div>
     );
@@ -49,7 +49,7 @@ export function GroupDetail({ id }: { id: number }) {
 
   if (!group) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
         <p className="font-display font-semibold">This group doesn't exist</p>
         <p className="mt-2 text-[14px] text-mist">
           The group may have been removed from the database.
@@ -139,7 +139,7 @@ export function GroupDetail({ id }: { id: number }) {
   ].filter(([, v]) => v !== "") as [string, string][];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       {/* Spotify-like artist header: wide banner, gradient, big name */}
       <div
         ref={bannerRef}

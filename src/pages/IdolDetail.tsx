@@ -17,7 +17,7 @@ export function IdolDetail({ id }: { id: number }) {
 
   if (!ready) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
         <p className="font-display font-semibold">Loading scouting sheet…</p>
       </div>
     );
@@ -25,7 +25,7 @@ export function IdolDetail({ id }: { id: number }) {
 
   if (!idol || !breakdown) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
         <p className="font-display font-semibold">This scouting sheet doesn't exist</p>
         <p className="mt-2 text-[14px] text-mist">
           The idol may have been removed from the database.
@@ -47,7 +47,7 @@ export function IdolDetail({ id }: { id: number }) {
   ].filter(([, v]) => v !== "") as [string, string][];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
         {/* Left pane — the card and the person */}
         <div>

@@ -207,7 +207,7 @@ export function Settings() {
     (local ?? buildLocal(configRef.current))[group] ?? {};
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold">Rating engine</h1>

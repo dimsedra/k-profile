@@ -29,14 +29,14 @@ export function Home() {
 
   if (!ready) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
         <p className="font-display font-semibold">Loading catalog…</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       {/* Hero — the binder's best card is the opening image */}
       <div className="flex flex-col items-start gap-10 lg:flex-row lg:items-center lg:gap-16">
         <div className="max-w-xl">

@@ -35,7 +35,7 @@ function Screen() {
         {route.name === "login" && <Login />}
         {route.name === "settings" && <Settings />}
       </main>
-      <footer className="mx-auto max-w-6xl px-4 pb-10 pt-16 sm:px-6">
+      <footer className="mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6">
         <p className="text-[12px] text-mist">
           K-Profile — a scouting database for the idol age. All idols in the
           sample database are fictional.

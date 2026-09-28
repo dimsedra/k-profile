@@ -45,7 +45,7 @@ export function NavBar({ route }: { route: Route }) {
   };
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
         <a href="#/" className="flex items-baseline gap-2 shrink-0">
           <span className="font-display font-extrabold tracking-tight text-[17px]">
             K-PROFILE
