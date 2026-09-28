@@ -172,7 +172,7 @@ export function IdolDetail({ id }: { id: number }) {
               <Panel key={cat.key}>
                 <div className="mb-4 flex items-baseline justify-between gap-3 border-b border-line pb-3">
                   <span className="font-display text-[17px] font-bold">{cat.label}</span>
-                  <span className="font-display tnum text-2xl font-bold">
+                  <span className={cn("font-display tnum text-2xl font-bold", statTone(breakdown.cats[cat.key]))}>
                     {Math.round(breakdown.cats[cat.key])}
                   </span>
                 </div>
