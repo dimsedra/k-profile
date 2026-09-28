@@ -5,7 +5,7 @@ import { useStore } from "../store";
 const LINKS: { label: string; href: string; match: string[] }[] = [
   { label: "Home", href: "#/", match: ["home"] },
   { label: "Scouting Table", href: "#/table", match: ["table"] },
-  { label: "Photocards", href: "#/binder", match: ["binder", "idol"] },
+  { label: "Photocards", href: "#/binder", match: ["binder", "idol", "group"] },
 ];
 
 export function NavBar({ route }: { route: Route }) {

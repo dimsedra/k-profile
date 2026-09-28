@@ -5,6 +5,7 @@ import { Binder } from "./pages/Binder";
 import { Home } from "./pages/Home";
 import { IdolDetail } from "./pages/IdolDetail";
 import { IdolForm } from "./pages/IdolForm";
+import { GroupDetail } from "./pages/GroupDetail";
 import { Login } from "./pages/Login";
 import { ScoutingTable } from "./pages/ScoutingTable";
 import { Settings } from "./pages/Settings";
@@ -19,6 +20,7 @@ function Screen() {
         {route.name === "table" && <ScoutingTable />}
         {route.name === "binder" && <Binder />}
         {route.name === "idol" && <IdolDetail id={Number(route.id)} />}
+        {route.name === "group" && <GroupDetail id={Number(route.id)} />}
         {route.name === "add" && <IdolForm key="add" />}
         {route.name === "edit" && <IdolForm key={route.id} editId={Number(route.id)} />}
         {route.name === "login" && <Login />}

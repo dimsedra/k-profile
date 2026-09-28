@@ -48,7 +48,7 @@ export function Portrait({
   idol,
   className,
 }: {
-  idol: Idol;
+  idol: Pick<Idol, "stageName" | "photo">;
   className?: string;
 }) {
   if (idol.photo) {
