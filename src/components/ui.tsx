@@ -17,6 +17,7 @@ export function SearchInput({
   ariaExpanded,
   ariaControls,
   className,
+  dense = false,
 }: {
   value: string;
   onChange: (v: string) => void;
