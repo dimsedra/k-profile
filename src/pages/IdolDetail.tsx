@@ -112,14 +112,14 @@ export function IdolDetail({ id }: { id: number }) {
 
         {/* Right pane — the numbers */}
         <div>
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <div>
-              <h1 className="font-display text-2xl font-bold">{idol.stageName}</h1>
-              <p className="mt-1 text-[14px] text-mist">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-2xl font-bold">{idol.stageName}</h1>
+              <p className="mt-1 truncate text-[14px] text-mist">
                 {idol.group} — {idol.roles.map((r, i) => `${i + 1}. ${roleLabel(r)}`).join(", ")}
               </p>
             </div>
-            <OvrBadge ovr={breakdown.ovr} size="lg" />
+            <OvrBadge ovr={breakdown.ovr} size="lg" className="shrink-0" />
           </div>
 
           {/* How the rating is built */}
