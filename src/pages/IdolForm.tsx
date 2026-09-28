@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useStore, type GroupEntry } from "../store";
+import { useStore } from "../store";
 import {
   CATEGORIES,
   computeOvr,
@@ -37,7 +37,7 @@ const blank = (): Idol => ({
 });
 
 export function IdolForm({ editId }: { editId?: number }) {
-  const { idols, config, fieldDefs, groups, isAdmin, ready, addIdol, updateIdol } = useStore();
+  const { idols, config, fieldDefs, groups, agencies, isAdmin, ready, addIdol, updateIdol } = useStore();
   const editing = editId !== undefined ? idols.find((i) => i.id === editId) : undefined;
 
   const [draft, setDraft] = useState<Idol>(() =>
@@ -185,16 +185,30 @@ export function IdolForm({ editId }: { editId?: number }) {
                   onChange={(e) => set({ realName: e.target.value })} placeholder="Yoon Sora" />
               </div>
               <div>
-                <GroupCombobox
+                <SuggestInput
+                  id="f-group"
+                  label="Group"
                   value={draft.group}
-                  groups={groups}
+                  options={groups}
                   onChange={(v) => set({ group: v })}
+                  placeholder="IVE, NOVA9, or Solo"
+                  matchedText={(name) => <>Matched canonical spelling: <strong>{name}</strong></>}
+                  newText={(v) => <>New group — “{v}” will be added automatically on save.</>}
+                  emptyText="Start typing to match an existing group."
                 />
               </div>
               <div>
-                <label className={labelCls} htmlFor="f-agency">Agency</label>
-                <input id="f-agency" className={inputCls} value={draft.agency ?? ""}
-                  onChange={(e) => set({ agency: e.target.value })} placeholder="Halla Entertainment" />
+                <SuggestInput
+                  id="f-agency"
+                  label="Agency"
+                  value={draft.agency ?? ""}
+                  options={agencies}
+                  onChange={(v) => set({ agency: v })}
+                  placeholder="Starship Entertainment"
+                  matchedText={(name) => <>Matched canonical spelling: <strong>{name}</strong></>}
+                  newText={(v) => <>New agency — “{v}” will be added automatically on save.</>}
+                  emptyText="Start typing to match an existing agency. Leave blank for none."
+                />
               </div>
               <div>
                 <label className={labelCls} htmlFor="f-gender">Gender</label>
@@ -467,28 +481,40 @@ export function IdolForm({ editId }: { editId?: number }) {
 }
 
 /**
- * Group field with closest-match suggestions. Matching is case-insensitive,
- * so typing "ive" surfaces canonical "IVE". Picking a suggestion (or typing
- * an exact match) stores the canonical spelling; a brand-new name is
- * auto-added as a group entry on save.
+ * Suggest-on-type field with closest-match suggestions. Matching is
+ * case-insensitive, so typing "ive" surfaces canonical "IVE". Picking a
+ * suggestion (or typing an exact match) stores the canonical spelling;
+ * a brand-new name is auto-added as an entry on save.
  */
-function GroupCombobox({
+function SuggestInput({
+  id,
+  label,
   value,
-  groups,
+  options,
   onChange,
+  placeholder,
+  matchedText,
+  newText,
+  emptyText,
 }: {
+  id: string;
+  label: string;
   value: string;
-  groups: GroupEntry[];
+  options: { id: number; name: string }[];
   onChange: (v: string) => void;
+  placeholder: string;
+  matchedText: (name: string) => React.ReactNode;
+  newText: (v: string) => React.ReactNode;
+  emptyText: string;
 }) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
 
   const q = value.trim().toLowerCase();
-  const exact = q ? groups.find((g) => g.name.toLowerCase() === q) : undefined;
+  const exact = q ? options.find((o) => o.name.toLowerCase() === q) : undefined;
   const suggestions = (q
-    ? groups.filter((g) => g.name.toLowerCase().includes(q) && g.name.toLowerCase() !== q)
-    : groups
+    ? options.filter((o) => o.name.toLowerCase().includes(q) && o.name.toLowerCase() !== q)
+    : options
   ).slice(0, 8);
   const hi = suggestions.length > 0 ? highlight % suggestions.length : 0;
 
@@ -499,9 +525,9 @@ function GroupCombobox({
 
   return (
     <div className="relative">
-      <label className={labelCls} htmlFor="f-group">Group</label>
+      <label className={labelCls} htmlFor={id}>{label}</label>
       <input
-        id="f-group"
+        id={id}
         className={inputCls}
         value={value}
         onChange={(e) => {
@@ -527,25 +553,25 @@ function GroupCombobox({
         }}
         role="combobox"
         aria-expanded={open}
-        aria-controls="group-suggest"
+        aria-controls={`${id}-suggest`}
         aria-autocomplete="list"
-        placeholder="IVE, NOVA9, or Solo"
+        placeholder={placeholder}
         autoComplete="off"
       />
       {open && suggestions.length > 0 && (
         <ul
-          id="group-suggest"
+          id={`${id}-suggest`}
           role="listbox"
           className="absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-auto rounded-lg border border-line bg-paper py-1 shadow-lg"
         >
-          {suggestions.map((g, i) => (
+          {suggestions.map((o, i) => (
             <li
-              key={g.id}
+              key={o.id}
               role="option"
               aria-selected={i === hi}
               onMouseDown={(e) => {
                 e.preventDefault();
-                pick(g.name);
+                pick(o.name);
               }}
               onMouseEnter={() => setHighlight(i)}
               className={
@@ -554,19 +580,13 @@ function GroupCombobox({
                   : "cursor-pointer px-3 py-1.5 text-[14px] text-mist"
               }
             >
-              {g.name}
+              {o.name}
             </li>
           ))}
         </ul>
       )}
       <p className="mt-1 text-[12px] text-mist">
-        {exact ? (
-          <>Matched canonical spelling: <strong>{exact.name}</strong></>
-        ) : q ? (
-          <>New group — “{value.trim()}” will be added automatically on save.</>
-        ) : (
-          "Start typing to match an existing group."
-        )}
+        {exact ? matchedText(exact.name) : q ? newText(value.trim()) : emptyText}
       </p>
     </div>
   );

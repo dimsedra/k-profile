@@ -31,7 +31,7 @@ interface IdolRow {
   gender: string;
   generation: number;
   debut_year: number | null;
-  agency: string | null;
+  agency_id: number | null;
   bio: string;
   photo_path: string | null;
   photo_kind: string;
@@ -67,6 +67,11 @@ export interface GroupEntry {
   debutYear?: number;
   agency: string;
   fandomName: string;
+}
+
+export interface AgencyEntry {
+  id: number;
+  name: string;
 }
 
 interface FieldDefRow {
@@ -142,6 +147,7 @@ function sanitizeEngine(eng: EngineRow): EngineConfig {
 function toIdol(
   row: IdolRow,
   groupName: string,
+  agencyName: string,
   roles: RoleRow[],
   attrs: AttrRow[],
   values: ValueRow[],
@@ -158,7 +164,7 @@ function toIdol(
     gender: row.gender as Idol["gender"],
     generation: row.generation as Idol["generation"],
     debutYear: row.debut_year ?? undefined,
-    agency: row.agency ?? "",
+    agency: agencyName,
     bio: row.bio,
     photo: row.photo_path ? versionedPhotoUrl(row.photo_path, row.updated_at) : undefined,
     photoPath: row.photo_path ?? undefined,
@@ -184,6 +190,7 @@ interface Store {
   config: EngineConfig;
   fieldDefs: FieldDef[];
   groups: GroupEntry[];
+  agencies: AgencyEntry[];
   userEmail: string | null;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
@@ -224,6 +231,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [config, setConfigState] = useState<EngineConfig>(DEFAULT_CONFIG);
   const [fieldDefs, setFieldDefs] = useState<FieldDef[]>([]);
   const [groups, setGroups] = useState<GroupEntry[]>([]);
+  const [agencies, setAgencies] = useState<AgencyEntry[]>([]);
   const [session, setSession] = useState<Session | null>(null);
   const byGroup = useRef(new Map<number, number[]>());
 
@@ -231,7 +239,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (supabaseEnvMissing) return;
     try {
       const sb = getSupabase();
-      const [idolsRes, rolesRes, attrsRes, defsRes, valuesRes, engineRes, groupsRes] =
+      const [idolsRes, rolesRes, attrsRes, defsRes, valuesRes, engineRes, groupsRes, agenciesRes] =
         await Promise.all([
           sb.from("idols").select("*").order("id"),
           sb.from("idol_roles").select("*").order("idol_id").order("position"),
@@ -244,6 +252,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           sb.from("idol_custom_values").select("*"),
           sb.from("engine_config").select("*").eq("id", 1).maybeSingle(),
           sb.from("groups").select("*").order("name"),
+          sb.from("agencies").select("id,name").order("name"),
         ]);
       const firstError = [
         idolsRes.error,
@@ -253,6 +262,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         valuesRes.error,
         engineRes.error,
         groupsRes.error,
+        agenciesRes.error,
       ].find(Boolean);
       if (firstError) throw firstError;
 
@@ -280,6 +290,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const groupNameById = new Map<number, string>(
         ((groupsRes.data ?? []) as GroupEntry[]).map((g) => [g.id, g.name])
       );
+      const agencyRows = (agenciesRes.data ?? []) as AgencyEntry[];
+      const agencyNameById = new Map<number, string>(agencyRows.map((a) => [a.id, a.name]));
+      setAgencies(agencyRows.map((a) => ({ id: a.id, name: a.name })));
       const groupRows = (groupsRes.data ?? []) as Record<string, unknown>[];
       const membership = new Map<number, number[]>();
       for (const r of (idolsRes.data ?? []) as { id: number; group_id: number }[]) {
@@ -293,6 +306,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           toIdol(
             row,
             groupNameById.get(row.group_id) ?? "",
+            row.agency_id == null ? "" : (agencyNameById.get(row.agency_id) ?? ""),
             rolesByIdol.get(row.id) ?? [],
             attrsByIdol.get(row.id) ?? [],
             valuesByIdol.get(row.id) ?? [],
@@ -396,6 +410,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     throw error;
   }, []);
 
+  /**
+   * Same canonical treatment as groups, but optional: empty input resolves
+   * to null (no agency) instead of throwing.
+   */
+  const resolveAgencyId = useCallback(async (name: string): Promise<number | null> => {
+    const clean = name.trim();
+    if (!clean) return null;
+    const sb = getSupabase();
+    const match = async () => {
+      const { data, error } = await sb.from("agencies").select("id,name");
+      if (error) throw error;
+      return ((data ?? []) as AgencyEntry[]).find(
+        (a) => a.name.toLowerCase() === clean.toLowerCase()
+      );
+    };
+    const hit = await match();
+    if (hit) return hit.id;
+    const { data: created, error } = await sb
+      .from("agencies")
+      .insert({ name: clean })
+      .select("id")
+      .single();
+    if (!error) return (created as { id: number }).id;
+    const retry = await match();
+    if (retry) return retry.id;
+    throw error;
+  }, []);
+
   const uploadPhoto = useCallback(async (idolId: number, file: File) => {
     const sb = getSupabase();
     const path = `${idolId}/portrait`;
@@ -453,6 +495,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         const sb = getSupabase();
         const group_id = await resolveGroupId(draft.group);
+        const agency_id = await resolveAgencyId(draft.agency ?? "");
         const { data, error } = await sb
           .from("idols")
           .insert({
@@ -462,7 +505,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             gender: draft.gender,
             generation: draft.generation,
             debut_year: draft.debutYear ?? null,
-            agency: draft.agency || null,
+            agency_id,
             bio: draft.bio,
             popularity: draft.popularity,
           })
@@ -478,7 +521,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return errMsg(e, "Failed to add idol.");
       }
     },
-    [refresh, resolveGroupId, uploadPhoto, writeChildren]
+    [refresh, resolveGroupId, resolveAgencyId, uploadPhoto, writeChildren]
   );
 
   const updateIdol = useCallback(
@@ -486,6 +529,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         const sb = getSupabase();
         const group_id = await resolveGroupId(draft.group);
+        const agency_id = await resolveAgencyId(draft.agency ?? "");
         const patch: Record<string, unknown> = {
           stage_name: draft.stageName,
           real_name: draft.realName || null,
@@ -493,7 +537,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           gender: draft.gender,
           generation: draft.generation,
           debut_year: draft.debutYear ?? null,
-          agency: draft.agency || null,
+          agency_id,
           bio: draft.bio,
           popularity: draft.popularity,
           updated_at: new Date().toISOString(),
@@ -512,7 +556,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return errMsg(e, "Failed to save changes.");
       }
     },
-    [refresh, resolveGroupId, uploadPhoto, writeChildren]
+    [refresh, resolveGroupId, resolveAgencyId, uploadPhoto, writeChildren]
   );
 
   const deleteIdol = useCallback(
@@ -733,6 +777,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       config,
       fieldDefs,
       groups,
+      agencies,
       userEmail: session?.user?.email ?? null,
       isAdmin: session?.user?.app_metadata?.is_admin === true,
       signIn,
@@ -758,6 +803,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       config,
       fieldDefs,
       groups,
+      agencies,
       session,
       signIn,
       signOut,

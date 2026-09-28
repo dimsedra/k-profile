@@ -4,10 +4,11 @@
 -- Admin-allow paths are verified end-to-end over REST (see e2e check),
 -- because pgTAP cannot mint a JWT carrying app_metadata claims.
 begin;
-select plan(21);
+select plan(25);
 
 -- Fixtures inserted as table owner (bypasses RLS).
 insert into public.groups (name) values ('Probe Group');
+insert into public.agencies (name) values ('Probe Agency');
 insert into public.idols (stage_name, group_id, gender)
 values ('Probe Idol', (select id from public.groups where name = 'Probe Group'), 'Female');
 
@@ -17,6 +18,12 @@ select throws_ok(
   '23505',
   null,
   'group names are unique case-insensitively'
+);
+select throws_ok(
+  $$insert into public.agencies (name) values ('probe agency')$$,
+  '23505',
+  null,
+  'agency names are unique case-insensitively'
 );
 select throws_ok(
   $$insert into public.idols (stage_name, group_id) values ('Orphan', 999999)$$,
@@ -85,6 +92,17 @@ select throws_ok(
   null,
   'anon cannot insert groups'
 );
+select results_eq(
+  $$select name from public.agencies where name = 'Probe Agency'$$,
+  array['Probe Agency'],
+  'anon reads the agency list'
+);
+select throws_ok(
+  $$insert into public.agencies (name) values ('Nope')$$,
+  '42501',
+  null,
+  'anon cannot insert agencies'
+);
 
 -- authenticated non-admin: reads fine ...
 set local role authenticated;
@@ -122,6 +140,12 @@ select throws_ok(
   '42501',
   null,
   'non-admin cannot insert groups'
+);
+select throws_ok(
+  $$insert into public.agencies (name) values ('Nope')$$,
+  '42501',
+  null,
+  'non-admin cannot insert agencies'
 );
 
 -- UPDATE/DELETE denied by the USING clause match zero rows (no error),
