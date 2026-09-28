@@ -54,7 +54,7 @@ export function NavBar({ route }: { route: Route }) {
             Scouting & Idol Database
           </span>
         </a>
-        <div className="min-w-0 flex-1 sm:max-w-xs">
+        <div className="min-w-0 flex-1 sm:max-w-sm">
           <SearchBox />
         </div>
         <nav className="ml-auto flex flex-wrap items-center justify-end gap-1">

@@ -42,22 +42,21 @@ export function Binder() {
             Sorted by overall rating. Cards rated 90+ get the holographic foil edge.
           </p>
         </div>
-        <p className="tnum text-[13px] text-mist">
-          {visible.length} of {cards.length} cards
-        </p>
-      </div>
-
-      <div className="mt-6 flex justify-end">
-        <SearchInput
-          value={query}
-          onChange={setQuery}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setQuery("");
-          }}
-          placeholder="Search stage name, real name, or group…"
-          ariaLabel="Search photocards"
-          className="w-full max-w-md"
-        />
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setQuery("");
+            }}
+            placeholder="Search stage name, real name, or group…"
+            ariaLabel="Search photocards"
+            className="w-full sm:w-80"
+          />
+          <p className="tnum text-[13px] text-mist sm:text-right">
+            {visible.length} of {cards.length} cards
+          </p>
+        </div>
       </div>
 
       {cards.length === 0 ? (
