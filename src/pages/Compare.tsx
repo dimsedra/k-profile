@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
 import { OvrBadge, Panel, PentagonChart, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
-import { computeOvr } from "../engine/ovr";
+import { computeOvr, CATEGORIES, roleLabel } from "../engine/ovr";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
 import type { Idol } from "../engine/ovr";
@@ -78,6 +78,38 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
                 <span className="h-2 w-2 shrink-0 rounded-full bg-holo" />
                 <span className="truncate">{idolB.stageName}</span>
               </span>
+            </div>
+          </Panel>
+          <Panel title="Categories" className="mt-4">
+            <div className="space-y-2.5">
+              {CATEGORIES.map((c) => (
+                <VersusRow key={c.key} label={c.label} a={breakA.cats[c.key]} b={breakB.cats[c.key]} decimals={1} />
+              ))}
+            </div>
+          </Panel>
+          {CATEGORIES.map((c) => (
+            <Panel key={c.key} title={c.label} className="mt-4">
+              <div className="space-y-2.5">
+                {c.subs.map((s) => (
+                  <VersusRow
+                    key={s.key}
+                    label={s.label}
+                    a={idolA.attrs[s.key] ?? 50}
+                    b={idolB.attrs[s.key] ?? 50}
+                  />
+                ))}
+              </div>
+            </Panel>
+          ))}
+          <Panel title="Roles & popularity" className="mt-4">
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2 text-[14px]">
+                <span className="min-w-0 flex-1 truncate text-mist">Primary role</span>
+                <span className="truncate text-right font-medium">{roleLabel(idolA.roles[0] ?? "")}</span>
+                <span className="shrink-0 text-mist">/</span>
+                <span className="truncate text-right font-medium">{roleLabel(idolB.roles[0] ?? "")}</span>
+              </div>
+              <VersusRow label="Popularity" a={idolA.popularity} b={idolB.popularity} />
             </div>
           </Panel>
         </>
