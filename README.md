@@ -78,17 +78,94 @@ npx supabase stop                 # stop local stack (data persists in volumes)
 - `supabase/tests/` — pgTAP tests proving anon reads, anon/non-admin writes
   denied, denied writes leave rows intact.
 
-## Hosted (Supabase + Vercel, free tiers)
+## Hosted: Supabase cloud (free tier)
 
-1. Create a free project at supabase.com/dashboard (note the project ref).
-2. `npx supabase link --project-ref <ref>` then `npx supabase db push`
-   (needs the DB password). Migrations + RLS + bucket come along.
-3. Create the admin user in hosted Studio, grant `is_admin` with the SQL above.
-4. Import the repo into Vercel (Vite preset, zero config — hash router needs no
-   rewrites) with env vars `VITE_SUPABASE_URL` and
-   `VITE_SUPABASE_PUBLISHABLE_KEY` from the hosted project.
-5. Free-tier notes: 1 GB storage total (keep uploads compressed), 50 MB max per
-   file (bucket caps at 15 MB), projects pause after 7 days of inactivity.
+### 1. Create the project
+
+1. supabase.com/dashboard → New project → Free plan. Region: Singapore
+   (closest to ID users). Save the **DB password** somewhere safe.
+2. Note the **project ref** (short string in the project URL/settings).
+
+### 2. Push the schema from this repo
+
+```bash
+npx supabase link --project-ref <ref>
+npx supabase db push        # needs the DB password (prompted)
+```
+
+This applies every file in `supabase/migrations` in order: tables, RLS
+policies, storage bucket. Verify in hosted Studio: Table Editor shows
+`idols, groups, agencies, ...`; `engine_config` holds 1 row; Storage
+shows the public `idol-cards` bucket.
+
+### 3. Create the admin (auth is never migrated)
+
+1. Hosted Studio → Authentication → Add user (email + password).
+2. SQL editor:
+   ```sql
+   update auth.users
+   set raw_app_meta_data = raw_app_meta_data || '{"is_admin": true}'::jsonb
+   where email = 'you@example.com';
+   ```
+3. Sign out/in once so the JWT picks up the flag.
+
+### 4. Seed data from local (optional)
+
+DB rows and storage files move separately. Auth users are recreated
+manually (step 3) — never dumped.
+
+```bash
+# DB: data-only dump, FK-safe table order, then restore with psql
+# (needs a PostgreSQL client; connection string is in
+#  Dashboard → Project Settings → Database → Connection string)
+npx supabase db dump --local --data-only \
+  --table public.agencies --table public.groups \
+  --table public.custom_field_defs --table public.idols \
+  --table public.idol_roles --table public.idol_attrs \
+  --table public.idol_custom_values -f seed-data.sql
+# Edit seed-data.sql: replace the engine_config COPY block with:
+#   update public.engine_config set sub_weights = ..., role_matrix = ...,
+#     role_decay = ..., drift_max = ..., group_weight_mode = ... where id = 1;
+#   (values copied from the local row — never INSERT id 1, it exists)
+psql "<hosted-connection-string>" -f seed-data.sql
+# Fix identity sequences, then verify counts match local:
+psql "<hosted-connection-string>" -c \
+  "select setval('public.idols_id_seq', max(id)) from public.idols;"
+# (repeat for groups_id_seq, agencies_id_seq, custom_field_defs_id_seq)
+```
+
+```bash
+# Files: same bucket paths, so photo_path values stay valid.
+# Download from local S3 API, upload to hosted with the service key
+# (Dashboard → Project Settings → API → secret key, never in frontend):
+# - local S3: http://127.0.0.1:54321/storage/v1/s3 (keys from `supabase start`)
+# - list objects under idol-cards/, GET each, PUT to
+#   https://<ref>.supabase.co/storage/v1/object/idol-cards/<same-path>
+```
+
+Verify: row counts per table equal local; open 2–3 public photo URLs
+(anonymously — they must return 200).
+
+### 5. Free-tier notes
+
+- 1 GB storage, 500 MB DB, 50 MB max/file (bucket caps at 15 MB anyway).
+- Projects **pause after 7 days of inactivity** — resume with one click in
+  the dashboard. First load after resume is slow; that is normal.
+
+## Hosted: Vercel (free tier)
+
+1. vercel.com → Add New Project → import `dimsedra/k-profile`.
+   Framework auto-detects **Vite** (`npm run build` → `dist`). No config
+   needed — the hash router (`#/…`) requires no rewrites.
+2. Environment Variables (Production + Preview):
+   - `VITE_SUPABASE_URL=https://<ref>.supabase.co`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…`
+   (from Dashboard → Project Settings → API. Publishable key only.)
+3. Deploy. Every push to the production branch redeploys automatically;
+   PRs get preview URLs.
+4. Local dev keeps using `.env.local` (untracked) pointed at
+   `http://127.0.0.1:54321` — never commit hosted keys.
+5. Custom domain is optional (Project → Settings → Domains).
 
 ## Repo layout
 
