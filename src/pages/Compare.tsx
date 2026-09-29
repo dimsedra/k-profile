@@ -101,7 +101,7 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
           </Panel>
           <Panel title="Roles & popularity" className="mt-4">
             <div className="space-y-2.5">
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
+              <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
                 <span className="truncate text-right font-medium">{roleLabel(idolA.roles[0] ?? "")}</span>
                 <span className="whitespace-nowrap px-1 text-[13px] text-mist">Primary role</span>
                 <span className="truncate text-left font-medium">{roleLabel(idolB.roles[0] ?? "")}</span>
@@ -119,7 +119,7 @@ function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: strin
   const d = a - b;
   const fmt = (v: number) => v.toFixed(decimals);
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
+    <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
       <span className={cn("tnum text-right font-semibold", strong ? "font-display text-xl font-bold" : "text-[15px]", d > 0 && statTone(a))}>
         {fmt(a)}
       </span>
