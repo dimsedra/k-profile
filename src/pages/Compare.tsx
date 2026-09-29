@@ -121,7 +121,7 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
                 </div>
               ))}
               <div className="border-t border-line pt-3">
-                <div className="grid min-h-10 grid-cols-[1fr_7rem_1fr] items-center gap-x-3 text-[14px] sm:grid-cols-[1fr_10rem_1fr]">
+    <div className="grid min-h-10 grid-cols-[1fr_9rem_1fr] items-center gap-x-3 text-[14px] sm:grid-cols-[1fr_12rem_1fr]">
                   <span className="truncate text-right font-medium">{roleLabel(idolA.roles[0] ?? "")}</span>
                   <span className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-1 text-center text-[13px] text-mist">Primary role</span>
                   <span className="truncate text-left font-medium">{roleLabel(idolB.roles[0] ?? "")}</span>
@@ -144,12 +144,12 @@ function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: strin
   const pct = (v: number) =>
     `${Math.max(2, Math.min(100, ((Math.round(v) - 40) / 59) * 100))}%`;
   return (
-    <div className="grid min-h-10 grid-cols-[1fr_7rem_1fr] items-center gap-x-3 text-[14px] sm:grid-cols-[1fr_10rem_1fr]">
+                <div className="grid min-h-10 grid-cols-[1fr_9rem_1fr] items-center gap-x-3 text-[14px] sm:grid-cols-[1fr_12rem_1fr]">
       <span className="flex min-w-0 items-center justify-end gap-2">
         <span className="hidden h-1.5 flex-1 rounded-full bg-line sm:block" aria-hidden>
           <span className="ml-auto block h-full rounded-full bg-punch" style={{ width: pct(a) }} />
         </span>
-        <span className={cn("tnum w-12 shrink-0 text-right font-semibold sm:w-14", strong ? "font-display text-lg font-bold sm:text-xl" : "text-[15px] sm:text-lg", d > 0 && statTone(a))}>
+        <span className={cn("tnum w-10 shrink-0 text-right font-semibold sm:w-14", strong ? "font-display text-base font-bold sm:text-xl" : "text-[15px] sm:text-lg", d > 0 && statTone(a))}>
           {fmt(a)}
         </span>
       </span>
@@ -162,7 +162,7 @@ function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: strin
         </span>
       </span>
       <span className="flex min-w-0 items-center gap-2">
-        <span className={cn("tnum w-12 shrink-0 text-left font-semibold sm:w-14", strong ? "font-display text-lg font-bold sm:text-xl" : "text-[15px] sm:text-lg", d < 0 && statTone(b))}>
+        <span className={cn("tnum w-10 shrink-0 text-left font-semibold sm:w-14", strong ? "font-display text-base font-bold sm:text-xl" : "text-[15px] sm:text-lg", d < 0 && statTone(b))}>
           {fmt(b)}
         </span>
         <span className="hidden h-1.5 flex-1 rounded-full bg-line sm:block" aria-hidden>
