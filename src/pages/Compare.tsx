@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
-import { OvrBadge, Panel, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
+import { OvrBadge, Panel, PentagonChart, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
 import { computeOvr } from "../engine/ovr";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
@@ -65,6 +65,19 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
             </div>
             <div className="mt-3">
               <VersusRow label="Overall rating" a={breakA.ovr} b={breakB.ovr} />
+            </div>
+          </Panel>
+          <Panel title="Attribute pentagon" className="mt-4">
+            <PentagonChart values={breakA.cats} valuesB={breakB.cats} />
+            <div className="mx-auto mt-2 flex max-w-full items-center justify-center gap-4 text-[13px] text-mist">
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-punch" />
+                <span className="truncate">{idolA.stageName}</span>
+              </span>
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-holo" />
+                <span className="truncate">{idolB.stageName}</span>
+              </span>
             </div>
           </Panel>
         </>

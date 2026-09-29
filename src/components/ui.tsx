@@ -90,9 +90,11 @@ const PENTA_SHORT: Record<CategoryKey, string> = {
 /** Radar pentagon of the 5 parent categories. Domain 40–100, same as StatBar. */
 export function PentagonChart({
   values,
+  valuesB,
   size = 220,
 }: {
   values: Record<CategoryKey, number>;
+  valuesB?: Record<CategoryKey, number>;
   size?: number;
 }) {
   const c = 110;
@@ -137,6 +139,16 @@ export function PentagonChart({
         strokeWidth="2"
         strokeLinejoin="round"
       />
+      {valuesB && (
+        <polygon
+          points={points(PENTA_ORDER.map((k) => radiusOf(valuesB[k])))}
+          fill="var(--color-holo)"
+          fillOpacity="0.12"
+          stroke="var(--color-holo)"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      )}
       {PENTA_ORDER.map((k, i) => {
         const [x, y] = polar(i, radiusOf(values[k]));
         const [lx, ly] = polar(i, R + 18);
@@ -157,6 +169,11 @@ export function PentagonChart({
           </g>
         );
       })}
+      {valuesB &&
+        PENTA_ORDER.map((k, i) => {
+          const [x, y] = polar(i, radiusOf(valuesB[k]));
+          return <circle key={k} cx={x} cy={y} r="3.5" fill="var(--color-holo)" />;
+        })}
     </svg>
   );
 }
