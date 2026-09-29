@@ -189,8 +189,9 @@ export function IdolDetail({ id }: { id: number }) {
               </span>
             </div>
             <p className="mt-3 text-[12px] leading-relaxed text-mist">
-              Roles are ranked by this idol's actual scores, then blended with decay
-              weights — the strongest role carries the rating, extra roles refine it.
+              Think of roles as lenses, not certificates. This panel shows how
+              well the idol's stats fit each tagged role — the best fit leads,
+              the rest refine.
             </p>
           </Panel>
           </div>
