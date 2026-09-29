@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useStore, type GroupEntry } from "../store";
+import { useStore } from "../store";
 import {
   CATEGORIES,
   computeOvr,
@@ -8,7 +8,8 @@ import {
   type Gender,
   type Idol,
 } from "../engine/ovr";
-import { OvrBadge, Panel, PhotoCard } from "../components/ui";
+import { OvrBadge, Panel, PhotoCard, statTone } from "../components/ui";
+import { SuggestInput } from "../components/SuggestInput";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
 
@@ -37,7 +38,7 @@ const blank = (): Idol => ({
 });
 
 export function IdolForm({ editId }: { editId?: number }) {
-  const { idols, config, fieldDefs, groups, isAdmin, ready, addIdol, updateIdol } = useStore();
+  const { idols, config, fieldDefs, groups, agencies, isAdmin, ready, addIdol, updateIdol } = useStore();
   const editing = editId !== undefined ? idols.find((i) => i.id === editId) : undefined;
 
   const [draft, setDraft] = useState<Idol>(() =>
@@ -123,7 +124,7 @@ export function IdolForm({ editId }: { editId?: number }) {
 
   if (!ready) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
         <p className="font-display font-semibold">Loading…</p>
       </div>
     );
@@ -131,7 +132,7 @@ export function IdolForm({ editId }: { editId?: number }) {
 
   if (editId !== undefined && !editing) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
         <p className="font-display font-semibold">This scouting sheet doesn't exist</p>
         <p className="mt-2 text-[14px] text-mist">
           The idol may have been removed from the database.
@@ -161,7 +162,7 @@ export function IdolForm({ editId }: { editId?: number }) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <h1 className="font-display text-2xl font-bold">
         {editing ? `Edit ${editing.stageName}'s sheet` : "New scouting sheet"}
       </h1>
@@ -185,16 +186,30 @@ export function IdolForm({ editId }: { editId?: number }) {
                   onChange={(e) => set({ realName: e.target.value })} placeholder="Yoon Sora" />
               </div>
               <div>
-                <GroupCombobox
+                <SuggestInput
+                  id="f-group"
+                  label="Group"
                   value={draft.group}
-                  groups={groups}
+                  options={groups}
                   onChange={(v) => set({ group: v })}
+                  placeholder="IVE, NOVA9, or Solo"
+                  matchedText={(name) => <>Matched canonical spelling: <strong>{name}</strong></>}
+                  newText={(v) => <>New group — “{v}” will be added automatically on save.</>}
+                  emptyText="Start typing to match an existing group."
                 />
               </div>
               <div>
-                <label className={labelCls} htmlFor="f-agency">Agency</label>
-                <input id="f-agency" className={inputCls} value={draft.agency ?? ""}
-                  onChange={(e) => set({ agency: e.target.value })} placeholder="Halla Entertainment" />
+                <SuggestInput
+                  id="f-agency"
+                  label="Agency"
+                  value={draft.agency ?? ""}
+                  options={agencies}
+                  onChange={(v) => set({ agency: v })}
+                  placeholder="Starship Entertainment"
+                  matchedText={(name) => <>Matched canonical spelling: <strong>{name}</strong></>}
+                  newText={(v) => <>New agency — “{v}” will be added automatically on save.</>}
+                  emptyText="Start typing to match an existing agency. Leave blank for none."
+                />
               </div>
               <div>
                 <label className={labelCls} htmlFor="f-gender">Gender</label>
@@ -430,7 +445,7 @@ export function IdolForm({ editId }: { editId?: number }) {
             <div className="mt-3 space-y-1.5 text-[13px]">
               <div className="flex justify-between">
                 <span className="text-mist">Role-weighted base</span>
-                <span className="tnum font-semibold">{preview.base.toFixed(1)}</span>
+                <span className={cn("tnum font-semibold", statTone(preview.base))}>{preview.base.toFixed(1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-mist">Popularity drift</span>
@@ -462,112 +477,6 @@ export function IdolForm({ editId }: { editId?: number }) {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-/**
- * Group field with closest-match suggestions. Matching is case-insensitive,
- * so typing "ive" surfaces canonical "IVE". Picking a suggestion (or typing
- * an exact match) stores the canonical spelling; a brand-new name is
- * auto-added as a group entry on save.
- */
-function GroupCombobox({
-  value,
-  groups,
-  onChange,
-}: {
-  value: string;
-  groups: GroupEntry[];
-  onChange: (v: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [highlight, setHighlight] = useState(0);
-
-  const q = value.trim().toLowerCase();
-  const exact = q ? groups.find((g) => g.name.toLowerCase() === q) : undefined;
-  const suggestions = (q
-    ? groups.filter((g) => g.name.toLowerCase().includes(q) && g.name.toLowerCase() !== q)
-    : groups
-  ).slice(0, 8);
-  const hi = suggestions.length > 0 ? highlight % suggestions.length : 0;
-
-  const pick = (name: string) => {
-    onChange(name);
-    setOpen(false);
-  };
-
-  return (
-    <div className="relative">
-      <label className={labelCls} htmlFor="f-group">Group</label>
-      <input
-        id="f-group"
-        className={inputCls}
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setHighlight(0);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowDown" && suggestions.length > 0) {
-            e.preventDefault();
-            setHighlight((h) => (h + 1) % suggestions.length);
-          } else if (e.key === "ArrowUp" && suggestions.length > 0) {
-            e.preventDefault();
-            setHighlight((h) => (h - 1 + suggestions.length) % suggestions.length);
-          } else if (e.key === "Enter" && open && suggestions.length > 0) {
-            e.preventDefault();
-            pick(suggestions[hi].name);
-          } else if (e.key === "Escape") {
-            setOpen(false);
-          }
-        }}
-        role="combobox"
-        aria-expanded={open}
-        aria-controls="group-suggest"
-        aria-autocomplete="list"
-        placeholder="IVE, NOVA9, or Solo"
-        autoComplete="off"
-      />
-      {open && suggestions.length > 0 && (
-        <ul
-          id="group-suggest"
-          role="listbox"
-          className="absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-auto rounded-lg border border-line bg-paper py-1 shadow-lg"
-        >
-          {suggestions.map((g, i) => (
-            <li
-              key={g.id}
-              role="option"
-              aria-selected={i === hi}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                pick(g.name);
-              }}
-              onMouseEnter={() => setHighlight(i)}
-              className={
-                i === hi
-                  ? "cursor-pointer bg-sleeve px-3 py-1.5 text-[14px] font-medium"
-                  : "cursor-pointer px-3 py-1.5 text-[14px] text-mist"
-              }
-            >
-              {g.name}
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="mt-1 text-[12px] text-mist">
-        {exact ? (
-          <>Matched canonical spelling: <strong>{exact.name}</strong></>
-        ) : q ? (
-          <>New group — “{value.trim()}” will be added automatically on save.</>
-        ) : (
-          "Start typing to match an existing group."
-        )}
-      </p>
     </div>
   );
 }

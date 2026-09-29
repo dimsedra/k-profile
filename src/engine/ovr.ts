@@ -133,6 +133,8 @@ export interface EngineConfig {
   roleDecay: number;
   /** maximum OVR points popularity can drift, plus or minus */
   driftMax: number;
+  /** how members pull group combined stats: by popularity or equal */
+  groupWeightMode: "popularity" | "equal";
 }
 
 export const DEFAULT_CONFIG: EngineConfig = {
@@ -156,6 +158,7 @@ export const DEFAULT_CONFIG: EngineConfig = {
   },
   roleDecay: 0.5,
   driftMax: 2,
+  groupWeightMode: "popularity",
 };
 
 /* ----------------------------- math ------------------------------- */

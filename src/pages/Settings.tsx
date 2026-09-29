@@ -17,6 +17,7 @@ export function Settings() {
   const [activeRole, setActiveRole] = useState(ROLES[0].id);
   const [saveError, setSaveError] = useState("");
   const [newField, setNewField] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const guard = () => {
     if (!isAdmin) {
@@ -102,9 +103,15 @@ export function Settings() {
     if (!dirtyRef.current) setLocal(buildLocal(config));
   }, [config]);
 
+  // Flush a pending debounced save on unmount — otherwise dragging a
+  // slider and navigating away within the debounce window silently drops it.
   useEffect(
     () => () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (dirtyRef.current && localRef.current) {
+        dirtyRef.current = false;
+        void persistShares(localRef.current).then(() => setSaving(false));
+      }
     },
     []
   );
@@ -132,7 +139,7 @@ export function Settings() {
     );
   };
 
-  const persistShares = (next: Record<string, Shares>) => {
+  const persistShares = (next: Record<string, Shares>): Promise<void> => {
     const base = configRef.current;
     const subWeights = { ...base.subWeights };
     for (const cat of CATEGORIES) {
@@ -145,7 +152,7 @@ export function Settings() {
       const g = next[roleGroup(r.id)];
       if (g && groupKeysOk(roleGroup(r.id), g)) roleMatrix[r.id] = toCatRecord(g);
     }
-    void setConfig({ ...base, subWeights, roleMatrix }).then((msg) => {
+    return setConfig({ ...base, subWeights, roleMatrix }).then((msg) => {
       if (msg) {
         setSaveError(msg);
         dirtyRef.current = false;
@@ -196,10 +203,11 @@ export function Settings() {
       return { ...base, [group]: out };
     });
     dirtyRef.current = true;
+    setSaving(true);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       dirtyRef.current = false;
-      if (localRef.current) persistShares(localRef.current);
+      if (localRef.current) void persistShares(localRef.current).then(() => setSaving(false));
     }, 600);
   };
 
@@ -207,7 +215,7 @@ export function Settings() {
     (local ?? buildLocal(configRef.current))[group] ?? {};
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold">Rating engine</h1>
@@ -217,7 +225,12 @@ export function Settings() {
             apply to the whole database immediately.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <span className="tnum text-[12px] text-mist">
+              {saving ? "Saving…" : "All changes saved"}
+            </span>
+          )}
           <button
             onClick={() => {
               if (!guard()) return;
@@ -473,6 +486,42 @@ export function Settings() {
             subtracts it. Set to 0 to rate on craft alone.
           </p>
         </Panel>
+      </div>
+
+      {/* Group combined stats */}
+      <h2 className="mt-10 font-display text-[16px] font-semibold">
+        Group combined stats
+      </h2>
+      <p className="mt-1 text-[13px] text-mist">
+        How members pull the group average. Applies to every group immediately.
+      </p>
+      <div className="mt-4 grid max-w-md gap-2">
+        {(
+          [
+            { id: "popularity", label: "Popularity-weighted", desc: "Bigger fandom = bigger pull." },
+            { id: "equal", label: "Equal weights", desc: "Every member pulls the same." },
+          ] as const
+        ).map((opt) => (
+          <button
+            key={opt.id}
+            disabled={!isAdmin}
+            onClick={() => {
+              if (!guard()) return;
+              void setConfig({ ...config, groupWeightMode: opt.id }).then(
+                (msg) => msg && setSaveError(msg)
+              );
+            }}
+            className={cn(
+              "rounded-xl border p-3 text-left transition-colors disabled:opacity-50",
+              config.groupWeightMode === opt.id
+                ? "border-punch bg-punch-soft/40"
+                : "border-line bg-paper hover:border-ink/30"
+            )}
+          >
+            <span className="text-[14px] font-semibold">{opt.label}</span>
+            <span className="mt-0.5 block text-[12px] text-mist">{opt.desc}</span>
+          </button>
+        ))}
       </div>
     </div>
   );

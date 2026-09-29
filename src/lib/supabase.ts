@@ -24,3 +24,14 @@ export function getSupabase(): SupabaseClient {
 export function cardPhotoUrl(photoPath: string): string {
   return getSupabase().storage.from("idol-cards").getPublicUrl(photoPath).data.publicUrl;
 }
+
+/**
+ * Same, with a cache-busting version. Required because portrait uploads
+ * upsert onto a fixed path — without `?v=`, browsers and the CDN keep
+ * serving the previous cover after a re-upload.
+ */
+export function versionedPhotoUrl(photoPath: string, updatedAt?: string): string {
+  const base = cardPhotoUrl(photoPath);
+  const ms = updatedAt ? Date.parse(updatedAt) : NaN;
+  return Number.isFinite(ms) ? `${base}?v=${ms}` : base;
+}

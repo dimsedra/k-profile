@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -12,11 +13,13 @@ import {
   CATEGORIES,
   DEFAULT_CONFIG,
   ROLES,
+  computeOvr,
   type CategoryKey,
   type EngineConfig,
   type Idol,
 } from "./engine/ovr";
-import { cardPhotoUrl, getSupabase, supabaseEnvMissing } from "./lib/supabase";
+import { computeGroupStats, type GroupMemberInput, type GroupStats } from "./engine/groups";
+import { getSupabase, supabaseEnvMissing, versionedPhotoUrl } from "./lib/supabase";
 
 /* ------------------------- database row shapes ------------------------ */
 
@@ -28,11 +31,12 @@ interface IdolRow {
   gender: string;
   generation: number;
   debut_year: number | null;
-  agency: string | null;
+  agency_id: number | null;
   bio: string;
   photo_path: string | null;
   photo_kind: string;
   popularity: number;
+  updated_at: string;
 }
 
 interface RoleRow {
@@ -55,6 +59,19 @@ export interface FieldDef {
 export interface GroupEntry {
   id: number;
   name: string;
+  photo?: string;
+  photoPath?: string;
+  photoKind?: "image" | "video";
+  photoFocus: { x: number; y: number };
+  bio: string;
+  debutYear?: number;
+  agency: string;
+  fandomName: string;
+}
+
+export interface AgencyEntry {
+  id: number;
+  name: string;
 }
 
 interface FieldDefRow {
@@ -74,6 +91,7 @@ interface EngineRow {
   role_matrix: Record<string, Record<CategoryKey, number>>;
   role_decay: number | string;
   drift_max: number | string;
+  group_weight_mode: string | null;
 }
 
 const errMsg = (e: unknown, fallback: string) =>
@@ -117,11 +135,14 @@ function sanitizeEngine(eng: EngineRow): EngineConfig {
   }
   const roleDecay = Number(eng.role_decay);
   const driftMax = Number(eng.drift_max);
+  const groupWeightMode =
+    eng.group_weight_mode === "equal" ? "equal" : DEFAULT_CONFIG.groupWeightMode;
   return {
     subWeights,
     roleMatrix,
     roleDecay: Number.isFinite(roleDecay) ? roleDecay : DEFAULT_CONFIG.roleDecay,
     driftMax: Number.isFinite(driftMax) ? driftMax : DEFAULT_CONFIG.driftMax,
+    groupWeightMode,
   };
 }
 
@@ -130,6 +151,7 @@ function sanitizeEngine(eng: EngineRow): EngineConfig {
 function toIdol(
   row: IdolRow,
   groupName: string,
+  agencyName: string,
   roles: RoleRow[],
   attrs: AttrRow[],
   values: ValueRow[],
@@ -146,9 +168,9 @@ function toIdol(
     gender: row.gender as Idol["gender"],
     generation: row.generation as Idol["generation"],
     debutYear: row.debut_year ?? undefined,
-    agency: row.agency ?? "",
+    agency: agencyName,
     bio: row.bio,
-    photo: row.photo_path ? cardPhotoUrl(row.photo_path) : undefined,
+    photo: row.photo_path ? versionedPhotoUrl(row.photo_path, row.updated_at) : undefined,
     photoPath: row.photo_path ?? undefined,
     photoKind: row.photo_kind as Idol["photoKind"],
     roles: roles.map((r) => r.role_id),
@@ -172,6 +194,7 @@ interface Store {
   config: EngineConfig;
   fieldDefs: FieldDef[];
   groups: GroupEntry[];
+  agencies: AgencyEntry[];
   userEmail: string | null;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
@@ -186,6 +209,18 @@ interface Store {
   setConfig: (cfg: EngineConfig) => Promise<string | null>;
   resetConfig: () => Promise<string | null>;
   addFieldDef: (label: string) => Promise<string | null>;
+  groupStats: (groupId: number) => GroupStats | null;
+  groupMemberIds: (groupId: number) => number[];
+  addGroup: (
+    input: { name: string; bio: string; debutYear?: number; agency: string; fandomName: string },
+    photoFile?: File | null
+  ) => Promise<{ id?: number; error?: string }>;
+  deleteGroup: (id: number) => Promise<string | null>;
+  updateGroup: (
+    id: number,
+    patch: { bio: string; debutYear?: number; agency: string; fandomName: string; photoFocus?: { x: number; y: number } },
+    opts?: { photoFile?: File | null; removePhoto?: boolean }
+  ) => Promise<string | null>;
   deleteFieldDef: (id: number) => Promise<string | null>;
 }
 
@@ -200,13 +235,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [config, setConfigState] = useState<EngineConfig>(DEFAULT_CONFIG);
   const [fieldDefs, setFieldDefs] = useState<FieldDef[]>([]);
   const [groups, setGroups] = useState<GroupEntry[]>([]);
+  const [agencies, setAgencies] = useState<AgencyEntry[]>([]);
   const [session, setSession] = useState<Session | null>(null);
+  const byGroup = useRef(new Map<number, number[]>());
 
   const refresh = useCallback(async () => {
     if (supabaseEnvMissing) return;
     try {
       const sb = getSupabase();
-      const [idolsRes, rolesRes, attrsRes, defsRes, valuesRes, engineRes, groupsRes] =
+      const [idolsRes, rolesRes, attrsRes, defsRes, valuesRes, engineRes, groupsRes, agenciesRes] =
         await Promise.all([
           sb.from("idols").select("*").order("id"),
           sb.from("idol_roles").select("*").order("idol_id").order("position"),
@@ -218,7 +255,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             .order("id"),
           sb.from("idol_custom_values").select("*"),
           sb.from("engine_config").select("*").eq("id", 1).maybeSingle(),
-          sb.from("groups").select("id,name").order("name"),
+          sb.from("groups").select("*").order("name"),
+          sb.from("agencies").select("id,name").order("name"),
         ]);
       const firstError = [
         idolsRes.error,
@@ -228,6 +266,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         valuesRes.error,
         engineRes.error,
         groupsRes.error,
+        agenciesRes.error,
       ].find(Boolean);
       if (firstError) throw firstError;
 
@@ -255,11 +294,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const groupNameById = new Map<number, string>(
         ((groupsRes.data ?? []) as GroupEntry[]).map((g) => [g.id, g.name])
       );
+      const agencyRows = (agenciesRes.data ?? []) as AgencyEntry[];
+      const agencyNameById = new Map<number, string>(agencyRows.map((a) => [a.id, a.name]));
+      setAgencies(agencyRows.map((a) => ({ id: a.id, name: a.name })));
+      const groupRows = (groupsRes.data ?? []) as Record<string, unknown>[];
+      const membership = new Map<number, number[]>();
+      for (const r of (idolsRes.data ?? []) as { id: number; group_id: number }[]) {
+        const list = membership.get(r.group_id) ?? [];
+        list.push(r.id);
+        membership.set(r.group_id, list);
+      }
+      byGroup.current = membership;
       setIdols(
         ((idolsRes.data ?? []) as IdolRow[]).map((row) =>
           toIdol(
             row,
             groupNameById.get(row.group_id) ?? "",
+            row.agency_id == null ? "" : (agencyNameById.get(row.agency_id) ?? ""),
             rolesByIdol.get(row.id) ?? [],
             attrsByIdol.get(row.id) ?? [],
             valuesByIdol.get(row.id) ?? [],
@@ -268,7 +319,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         )
       );
       setFieldDefs(defs);
-      setGroups(((groupsRes.data ?? []) as GroupEntry[]).map((g) => ({ id: g.id, name: g.name })));
+      setGroups(
+        groupRows.map((g) => ({
+          id: g.id as number,
+          name: g.name as string,
+          photo: g.photo_path
+            ? versionedPhotoUrl(g.photo_path as string, g.updated_at as string)
+            : undefined,
+          photoPath: (g.photo_path as string | null) ?? undefined,
+          photoKind: ((g.photo_kind as string) ?? "image") as GroupEntry["photoKind"],
+          photoFocus: {
+            x: Number(g.photo_focus_x ?? 50),
+            y: Number(g.photo_focus_y ?? 50),
+          },
+          bio: (g.bio as string) ?? "",
+          debutYear: (g.debut_year as number | null) ?? undefined,
+          agency: g.agency_id == null ? "" : (agencyNameById.get(g.agency_id as number) ?? ""),
+          fandomName: (g.fandom_name as string | null) ?? "",
+        }))
+      );
 
       const eng = engineRes.data as EngineRow | null;
       if (eng) setConfigState(sanitizeEngine(eng));
@@ -345,6 +414,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     throw error;
   }, []);
 
+  /**
+   * Same canonical treatment as groups, but optional: empty input resolves
+   * to null (no agency) instead of throwing.
+   */
+  const resolveAgencyId = useCallback(async (name: string): Promise<number | null> => {
+    const clean = name.trim();
+    if (!clean) return null;
+    const sb = getSupabase();
+    const match = async () => {
+      const { data, error } = await sb.from("agencies").select("id,name");
+      if (error) throw error;
+      return ((data ?? []) as AgencyEntry[]).find(
+        (a) => a.name.toLowerCase() === clean.toLowerCase()
+      );
+    };
+    const hit = await match();
+    if (hit) return hit.id;
+    const { data: created, error } = await sb
+      .from("agencies")
+      .insert({ name: clean })
+      .select("id")
+      .single();
+    if (!error) return (created as { id: number }).id;
+    const retry = await match();
+    if (retry) return retry.id;
+    throw error;
+  }, []);
+
   const uploadPhoto = useCallback(async (idolId: number, file: File) => {
     const sb = getSupabase();
     const path = `${idolId}/portrait`;
@@ -402,6 +499,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         const sb = getSupabase();
         const group_id = await resolveGroupId(draft.group);
+        const agency_id = await resolveAgencyId(draft.agency ?? "");
         const { data, error } = await sb
           .from("idols")
           .insert({
@@ -411,7 +509,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             gender: draft.gender,
             generation: draft.generation,
             debut_year: draft.debutYear ?? null,
-            agency: draft.agency || null,
+            agency_id,
             bio: draft.bio,
             popularity: draft.popularity,
           })
@@ -427,7 +525,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return errMsg(e, "Failed to add idol.");
       }
     },
-    [refresh, resolveGroupId, uploadPhoto, writeChildren]
+    [refresh, resolveGroupId, resolveAgencyId, uploadPhoto, writeChildren]
   );
 
   const updateIdol = useCallback(
@@ -435,6 +533,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         const sb = getSupabase();
         const group_id = await resolveGroupId(draft.group);
+        const agency_id = await resolveAgencyId(draft.agency ?? "");
         const patch: Record<string, unknown> = {
           stage_name: draft.stageName,
           real_name: draft.realName || null,
@@ -442,7 +541,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           gender: draft.gender,
           generation: draft.generation,
           debut_year: draft.debutYear ?? null,
-          agency: draft.agency || null,
+          agency_id,
           bio: draft.bio,
           popularity: draft.popularity,
           updated_at: new Date().toISOString(),
@@ -461,7 +560,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return errMsg(e, "Failed to save changes.");
       }
     },
-    [refresh, resolveGroupId, uploadPhoto, writeChildren]
+    [refresh, resolveGroupId, resolveAgencyId, uploadPhoto, writeChildren]
   );
 
   const deleteIdol = useCallback(
@@ -489,6 +588,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             role_matrix: cfg.roleMatrix,
             role_decay: cfg.roleDecay,
             drift_max: cfg.driftMax,
+            group_weight_mode: cfg.groupWeightMode,
             updated_at: new Date().toISOString(),
           })
           .eq("id", 1)
@@ -535,6 +635,146 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [refresh]
   );
 
+  /**
+   * Groups with members cannot be deleted (FK restrict) — the page disables
+   * the button in that case; this is the last line of defense plus storage
+   * cleanup for empty groups.
+   */
+  const deleteGroup = useCallback(
+    async (id: number) => {
+      try {
+        const sb = getSupabase();
+        await sb.from("groups").delete().eq("id", id).throwOnError();
+        await sb.storage.from(PHOTO_BUCKET).remove([`group-${id}/portrait`]);
+        await refresh();
+        return null;
+      } catch (e) {
+        return errMsg(e, "Failed to remove group. Groups with members cannot be removed.");
+      }
+    },
+    [refresh]
+  );
+
+  const groupMemberIds = useCallback(
+    (groupId: number): number[] => byGroup.current.get(groupId) ?? [],
+    []
+  );
+
+  const addGroup = useCallback(
+    async (
+      input: { name: string; bio: string; debutYear?: number; agency: string; fandomName: string },
+      photoFile?: File | null
+    ): Promise<{ id?: number; error?: string }> => {
+      try {
+        const sb = getSupabase();
+        const clean = input.name.trim();
+        if (!clean) return { error: "Group name is required." };
+        const { data: all, error: listErr } = await sb.from("groups").select("id,name");
+        if (listErr) throw listErr;
+        const hit = ((all ?? []) as { id: number; name: string }[]).find(
+          (g) => g.name.toLowerCase() === clean.toLowerCase()
+        );
+        if (hit) return { error: `“${clean}” already exists as a group.`, id: hit.id };
+        const agency_id = await resolveAgencyId(input.agency);
+        const { data: created, error } = await sb
+          .from("groups")
+          .insert({
+            name: clean,
+            bio: input.bio,
+            debut_year: input.debutYear ?? null,
+            agency_id,
+            fandom_name: input.fandomName || null,
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+        const id = (created as { id: number }).id;
+        if (photoFile) {
+          const kind = photoFile.type.startsWith("video/") ? "video" : "image";
+          const { error: upErr } = await sb.storage
+            .from(PHOTO_BUCKET)
+            .upload(`group-${id}/portrait`, photoFile, { upsert: true, contentType: photoFile.type });
+          if (upErr) throw upErr;
+          await sb
+            .from("groups")
+            .update({
+              photo_path: `group-${id}/portrait`,
+              photo_kind: kind,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", id)
+            .throwOnError();
+        }
+        await refresh();
+        return { id };
+      } catch (e) {
+        return { error: errMsg(e, "Failed to add group.") };
+      }
+    },
+    [refresh, resolveAgencyId]
+  );
+
+  const groupStats = useCallback(
+    (groupId: number) => {
+      const ids = new Set(byGroup.current.get(groupId) ?? []);
+      const members = idols.filter((i) => ids.has(i.id));
+      if (members.length === 0) return null;
+      const inputs: GroupMemberInput[] = members.map((m) => {
+        const b = computeOvr(m, config);
+        return { id: m.id, cats: b.cats, ovr: b.ovr, popularity: m.popularity };
+      });
+      return computeGroupStats(inputs, config.groupWeightMode);
+    },
+    [idols, config]
+  );
+
+  const updateGroup = useCallback(
+    async (
+      id: number,
+      patch: { bio: string; debutYear?: number; agency: string; fandomName: string; photoFocus?: { x: number; y: number } },
+      opts?: { photoFile?: File | null; removePhoto?: boolean }
+    ): Promise<string | null> => {
+      try {
+        const sb = getSupabase();
+        const agency_id = await resolveAgencyId(patch.agency);
+        const row: Record<string, unknown> = {
+          bio: patch.bio,
+          debut_year: patch.debutYear ?? null,
+          agency_id,
+          fandom_name: patch.fandomName || null,
+        };
+        if (patch.photoFocus) {
+          row.photo_focus_x = Math.max(0, Math.min(100, Math.round(patch.photoFocus.x)));
+          row.photo_focus_y = Math.max(0, Math.min(100, Math.round(patch.photoFocus.y)));
+        }
+        if (opts?.removePhoto) {
+          row.photo_path = null;
+          row.photo_kind = "image";
+          await sb.storage.from(PHOTO_BUCKET).remove([`group-${id}/portrait`]);
+        }
+        await sb.from("groups").update(row).eq("id", id).throwOnError();
+        if (opts?.photoFile) {
+          const file = opts.photoFile;
+          const kind = file.type.startsWith("video/") ? "video" : "image";
+          const { error } = await sb.storage
+            .from(PHOTO_BUCKET)
+            .upload(`group-${id}/portrait`, file, { upsert: true, contentType: file.type });
+          if (error) throw error;
+          await sb
+            .from("groups")
+            .update({ photo_path: `group-${id}/portrait`, photo_kind: kind })
+            .eq("id", id)
+            .throwOnError();
+        }
+        await refresh();
+        return null;
+      } catch (e) {
+        return errMsg(e, "Failed to save group.");
+      }
+    },
+    [refresh, resolveAgencyId]
+  );
+
   const value = useMemo<Store>(
     () => ({
       ready,
@@ -544,6 +784,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       config,
       fieldDefs,
       groups,
+      agencies,
       userEmail: session?.user?.email ?? null,
       isAdmin: session?.user?.app_metadata?.is_admin === true,
       signIn,
@@ -556,6 +797,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       resetConfig,
       addFieldDef,
       deleteFieldDef,
+      groupStats,
+      groupMemberIds,
+      updateGroup,
+      addGroup,
+      deleteGroup,
     }),
     [
       ready,
@@ -564,6 +810,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       config,
       fieldDefs,
       groups,
+      agencies,
       session,
       signIn,
       signOut,
@@ -575,6 +822,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       resetConfig,
       addFieldDef,
       deleteFieldDef,
+      groupStats,
+      groupMemberIds,
+      updateGroup,
+      addGroup,
+      deleteGroup,
     ]
   );
 

@@ -5,7 +5,9 @@ export type Route =
   | { name: "table" }
   | { name: "binder" }
   | { name: "idol"; id: string }
+  | { name: "group"; id: string }
   | { name: "add" }
+  | { name: "addGroup" }
   | { name: "edit"; id: string }
   | { name: "login" }
   | { name: "settings" };
@@ -19,8 +21,12 @@ export function parseHash(hash: string): Route {
       return { name: "binder" };
     case "idol":
       return parts[1] ? { name: "idol", id: parts[1] } : { name: "binder" };
+    case "group":
+      return parts[1] ? { name: "group", id: parts[1] } : { name: "binder" };
     case "add":
       return { name: "add" };
+    case "add-group":
+      return { name: "addGroup" };
     case "edit":
       return parts[1] ? { name: "edit", id: parts[1] } : { name: "add" };
     case "login":
