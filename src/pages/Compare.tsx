@@ -36,7 +36,7 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
       <p className="mt-1 text-[13px] text-mist">
         Pick two idols to line up their stats side by side.
       </p>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3">
         <IdolSlot
           label="Idol A"
           idol={idolA}
@@ -212,29 +212,29 @@ function IdolSlot({
 
   if (idol && !picking) {
     return (
-      <div className="rounded-xl border border-line bg-paper p-3">
-        <p className="text-[12px] font-semibold uppercase tracking-widest text-mist">{label}</p>
-        <div className="mt-2 flex items-center gap-3">
-          <span className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+      <div className="rounded-xl border border-line bg-paper p-2 sm:p-3">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-mist sm:text-[12px]">{label}</p>
+        <div className="mt-2 flex items-center gap-2">
+          <span className="h-8 w-8 shrink-0 overflow-hidden rounded-lg sm:h-10 sm:w-10">
             <Portrait idol={idol} className="h-full w-full" />
           </span>
-          <span className="min-w-0 flex-1 truncate font-display text-[15px] font-semibold">
+          <span className="min-w-0 flex-1 truncate font-display text-[13px] font-semibold sm:text-[15px]">
             {idol.stageName}
           </span>
-          <button
-            onClick={() => setPicking(true)}
-            className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-mist hover:text-ink"
-          >
-            Change
-          </button>
         </div>
+        <button
+          onClick={() => setPicking(true)}
+          className="mt-2 w-full rounded-lg border border-line px-3 py-1.5 text-[12px] font-medium text-mist hover:text-ink sm:text-[13px]"
+        >
+          Change
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-line bg-paper p-3">
-      <p className="text-[12px] font-semibold uppercase tracking-widest text-mist">{label}</p>
+    <div className="rounded-xl border border-line bg-paper p-2 sm:p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-mist sm:text-[12px]">{label}</p>
       <div className="relative mt-2">
         <SearchInput
           value={q}
