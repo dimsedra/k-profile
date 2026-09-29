@@ -72,12 +72,92 @@ const EMPTY_FILTERS: TableFilters = {
 const toggleIn = <T,>(list: T[], v: T): T[] =>
   list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
+/* Session persistence: filters + sorts survive navigation and reload,
+   but reset when the tab closes (sessionStorage is cleared by the
+   browser). Anything malformed falls back to defaults per field. */
+
+const STORAGE_KEY = "kprofile:scouting-table-v1";
+const DEFAULT_SORTS: SortSpec[] = [{ key: "ovr", dir: -1 }];
+
+const numOrNull = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? v : null;
+
+const strList = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+
+function sanitizeSorts(raw: unknown): SortSpec[] {
+  if (!Array.isArray(raw)) return DEFAULT_SORTS;
+  const out = raw
+    .filter(
+      (s): s is SortSpec =>
+        !!s &&
+        typeof s === "object" &&
+        COLUMNS.some((c) => c.key === (s as SortSpec).key) &&
+        ((s as SortSpec).dir === 1 || (s as SortSpec).dir === -1)
+    )
+    .map((s) => ({ key: s.key, dir: s.dir }));
+  return out.length > 0 ? out : DEFAULT_SORTS;
+}
+
+function sanitizeFilters(raw: unknown): TableFilters {
+  const r = (
+    raw && typeof raw === "object" ? raw : {}
+  ) as Partial<Record<string, unknown>>;
+  const cat = (
+    r.catMin && typeof r.catMin === "object" ? r.catMin : {}
+  ) as Record<string, unknown>;
+  return {
+    genders: strList(r.genders).filter(
+      (g): g is "Male" | "Female" => g === "Male" || g === "Female"
+    ),
+    generations: Array.isArray(r.generations)
+      ? r.generations.filter((g): g is number => [1, 2, 3, 4, 5].includes(g))
+      : [],
+    roles: strList(r.roles),
+    groups: strList(r.groups),
+    ovrMin: numOrNull(r.ovrMin),
+    ovrMax: numOrNull(r.ovrMax),
+    popMin: numOrNull(r.popMin),
+    catMin: {
+      vocal: numOrNull(cat.vocal),
+      rap: numOrNull(cat.rap),
+      dance: numOrNull(cat.dance),
+      stage: numOrNull(cat.stage),
+      visual: numOrNull(cat.visual),
+    },
+    search: typeof r.search === "string" ? r.search : "",
+  };
+}
+
+function loadPersisted(): { filters: TableFilters; sorts: SortSpec[] } | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { filters?: unknown; sorts?: unknown };
+    return {
+      filters: sanitizeFilters(parsed.filters),
+      sorts: sanitizeSorts(parsed.sorts),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function ScoutingTable() {
   const { idols, config, ready, groups } = useStore();
-  const [sorts, setSorts] = useState<SortSpec[]>([{ key: "ovr", dir: -1 }]);
-  const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
+  const [initial] = useState(loadPersisted);
+  const [sorts, setSorts] = useState<SortSpec[]>(initial?.sorts ?? DEFAULT_SORTS);
+  const [filters, setFilters] = useState<TableFilters>(initial?.filters ?? EMPTY_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ filters, sorts }));
+    } catch {
+      // Storage unavailable (private mode, etc.) — table just won't persist.
+    }
+  }, [filters, sorts]);
 
   useEffect(() => {
     if (!filterOpen) return;
