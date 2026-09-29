@@ -145,7 +145,7 @@ function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: strin
     `${Math.max(2, Math.min(100, ((Math.round(v) - 40) / 59) * 100))}%`;
   return (
     <div className="grid min-h-10 grid-cols-[1fr_7rem_1fr] items-center gap-x-3 text-[14px] sm:grid-cols-[1fr_10rem_1fr]">
-      <span className="flex min-w-0 items-center gap-2">
+      <span className="flex min-w-0 items-center justify-end gap-2">
         <span className="hidden h-1.5 max-w-44 flex-1 rounded-full bg-line sm:block" aria-hidden>
           <span className="ml-auto block h-full rounded-full bg-punch" style={{ width: pct(a) }} />
         </span>
