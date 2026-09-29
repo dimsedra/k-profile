@@ -6,6 +6,7 @@ export type Route =
   | { name: "binder" }
   | { name: "idol"; id: string }
   | { name: "group"; id: string }
+  | { name: "compare"; a?: string; b?: string }
   | { name: "add" }
   | { name: "addGroup" }
   | { name: "edit"; id: string }
@@ -23,6 +24,8 @@ export function parseHash(hash: string): Route {
       return parts[1] ? { name: "idol", id: parts[1] } : { name: "binder" };
     case "group":
       return parts[1] ? { name: "group", id: parts[1] } : { name: "binder" };
+    case "compare":
+      return { name: "compare", a: parts[1] || undefined, b: parts[2] || undefined };
     case "add":
       return { name: "add" };
     case "add-group":
