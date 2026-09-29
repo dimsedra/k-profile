@@ -63,9 +63,9 @@ export function Home() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       {/* Hero — giant type left, tilted top card right */}
-      <div className="flex flex-col items-start gap-10 lg:flex-row lg:items-center lg:gap-16">
+      <div className="flex flex-col items-start gap-8 lg:flex-row lg:items-center lg:gap-16">
         <div className="max-w-xl">
-          <h1 className="text-balance font-display text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl">
+          <h1 className="text-balance font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl sm:leading-[1.02]">
             Scout idols like athletes.
             <br />
             Keep them like <span className="text-punch">photocards.</span>
@@ -75,7 +75,7 @@ export function Home() {
             atomic attributes, ranked roles, and a three-tier overall rating —
             then prints it all onto a collectible card.
           </p>
-          <dl className="mt-8 flex gap-10">
+          <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-6">
             <div>
               <dd className="font-display tnum text-4xl font-extrabold">{idols.length}</dd>
               <dt className="mt-1 text-[13px] text-mist">idols cataloged</dt>
@@ -93,7 +93,7 @@ export function Home() {
           </dl>
         </div>
         {top && (
-          <div className="mx-auto w-64 shrink-0 rotate-3 sm:w-80 lg:mr-6">
+          <div className="mx-auto w-full max-w-64 shrink-0 rotate-2 sm:w-80 sm:max-w-none sm:rotate-3 lg:mr-6">
             <div className="rounded-[17px] shadow-2xl shadow-ink/20">
               <PhotoCard idol={top.idol} ovr={top.ovr} href={`#/idol/${top.idol.id}`} />
             </div>

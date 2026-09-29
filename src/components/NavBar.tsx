@@ -13,16 +13,22 @@ const LINKS: { label: string; href: string; match: string[] }[] = [
 export function NavBar({ route }: { route: Route }) {
   const { userEmail, isAdmin } = useStore();
   const [addOpen, setAddOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const addRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const addActive = route.name === "add" || route.name === "edit" || route.name === "addGroup";
 
   useEffect(() => {
-    if (!addOpen) return;
+    if (!addOpen && !menuOpen) return;
     const onPointer = (e: PointerEvent) => {
       if (addRef.current && !addRef.current.contains(e.target as Node)) setAddOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setAddOpen(false);
+      if (e.key === "Escape") {
+        setAddOpen(false);
+        setMenuOpen(false);
+      }
     };
     document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
@@ -30,7 +36,12 @@ export function NavBar({ route }: { route: Route }) {
       document.removeEventListener("pointerdown", onPointer);
       document.removeEventListener("keydown", onKey);
     };
-  }, [addOpen]);
+  }, [addOpen, menuOpen]);
+
+  // Always land on the new page with the mobile menu closed.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [route.name]);
 
   const onMenuKey = (e: React.KeyboardEvent) => {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
@@ -44,9 +55,9 @@ export function NavBar({ route }: { route: Route }) {
     items[next].focus();
   };
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
-        <a href="#/" className="flex items-baseline gap-2 shrink-0">
+    <header ref={menuRef} className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6 md:flex-nowrap">
+        <a href="#/" className="order-1 flex items-baseline gap-2 shrink-0">
           <span className="font-display font-extrabold tracking-tight text-[17px]">
             K-PROFILE
           </span>
@@ -54,10 +65,43 @@ export function NavBar({ route }: { route: Route }) {
             Scouting & Idol Database
           </span>
         </a>
-        <div className="min-w-0 flex-1">
+        <div
+          className="order-3 min-w-0 basis-full md:order-2 md:basis-auto md:flex-1"
+          onFocus={() => setMenuOpen(false)}
+        >
           <SearchBox />
         </div>
-        <nav className="ml-auto flex flex-wrap items-center justify-end gap-1">
+        <div className="order-2 ml-auto md:hidden">
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-ink hover:bg-sleeve"
+          >
+            <span aria-hidden className="relative block h-4 w-5">
+              <span
+                className={cn(
+                  "absolute left-0 top-0 h-0.5 w-full rounded bg-current transition-transform",
+                  menuOpen && "translate-y-[7px] rotate-45"
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute left-0 top-[7px] h-0.5 w-full rounded bg-current transition-opacity",
+                  menuOpen && "opacity-0"
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute left-0 top-[14px] h-0.5 w-full rounded bg-current transition-transform",
+                  menuOpen && "-translate-y-[7px] -rotate-45"
+                )}
+              />
+            </span>
+          </button>
+        </div>
+        <nav aria-label="Primary" className="order-4 ml-auto hidden items-center justify-end gap-1 md:flex">
           {LINKS.map((l) => {
             const active = l.match.includes(route.name);
             return (
@@ -146,6 +190,86 @@ export function NavBar({ route }: { route: Route }) {
           )}
         </nav>
       </div>
+      {menuOpen && (
+        <div id="mobile-menu" className="absolute inset-x-0 top-full z-50 max-h-[70dvh] overflow-y-auto border-t border-line bg-paper shadow-lg md:hidden">
+          <nav aria-label="Mobile" className="mx-auto max-w-7xl space-y-1 px-4 py-3 sm:px-6">
+            {LINKS.map((l) => {
+              const active = l.match.includes(route.name);
+              return (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  aria-current={active ? "page" : undefined}
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    "block rounded-lg px-4 py-3 text-[15px] font-medium transition-colors",
+                    active
+                      ? "bg-ink text-white"
+                      : "text-mist hover:bg-sleeve hover:text-ink"
+                  )}
+                >
+                  {l.label}
+                </a>
+              );
+            })}
+            {isAdmin && (
+              <>
+                <p className="px-4 pb-1 pt-3 text-[12px] font-semibold uppercase tracking-widest text-mist">
+                  Add
+                </p>
+                <a
+                  href="#/add"
+                  aria-current={addActive ? "page" : undefined}
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    "block rounded-lg px-4 py-3 text-[15px] font-medium transition-colors",
+                    addActive
+                      ? "bg-punch text-white"
+                      : "text-mist hover:bg-sleeve hover:text-ink"
+                  )}
+                >
+                  Idol
+                </a>
+                <a
+                  href="#/add-group"
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-lg px-4 py-3 text-[15px] font-medium text-mist transition-colors hover:bg-sleeve hover:text-ink"
+                >
+                  Group
+                </a>
+              </>
+            )}
+            <a
+              href="#/login"
+              aria-current={route.name === "login" ? "page" : undefined}
+              onClick={() => setMenuOpen(false)}
+              className={cn(
+                "block rounded-lg px-4 py-3 text-[15px] font-medium transition-colors",
+                route.name === "login"
+                  ? "bg-ink text-white"
+                  : "text-mist hover:bg-sleeve hover:text-ink"
+              )}
+            >
+              {userEmail ? (isAdmin ? "Admin" : "Account") : "Sign in"}
+            </a>
+            {isAdmin && (
+              <a
+                href="#/settings"
+                aria-current={route.name === "settings" ? "page" : undefined}
+                onClick={() => setMenuOpen(false)}
+                className={cn(
+                  "block rounded-lg px-4 py-3 text-[15px] font-medium transition-colors",
+                  route.name === "settings"
+                    ? "bg-ink text-white"
+                    : "text-mist hover:bg-sleeve hover:text-ink"
+                )}
+              >
+                Settings
+              </a>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

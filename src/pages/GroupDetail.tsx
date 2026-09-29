@@ -433,7 +433,7 @@ export function GroupDetail({ id }: { id: number }) {
         <Panel className="mt-4" title="Combined stats (popularity-weighted)">
           <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
             {CATEGORIES.map((c) => (
-              <StatBar key={c.key} label={c.label} value={stats.cats[c.key]} strong />
+              <StatBar key={c.key} label={c.label} value={stats.cats[c.key]} />
             ))}
           </div>
           <p className="mt-3 text-[12px] leading-relaxed text-mist">
@@ -543,19 +543,23 @@ function MemberTable({ members, config }: { members: Idol[]; config: EngineConfi
 
   return (
     <div className="mt-8 overflow-x-auto rounded-2xl border border-line bg-paper">
-      <table className="w-full min-w-[760px] border-collapse text-[14px]">
+      <table className="w-full min-w-[650px] border-collapse text-[12px] sm:min-w-[760px] sm:text-[14px]">
         <thead>
           <tr className="border-b border-line">
-            <th className="w-12 px-3 py-2.5" aria-label="Portrait" />
+            <th className="sticky left-0 z-10 w-[52px] bg-paper px-2 py-2 sm:px-3 sm:py-2.5" aria-label="Portrait" />
             {MEMBER_COLUMNS.map((col) => (
               <th
                 key={col.key}
-                className="px-3 py-2.5 text-center"
+                className={cn(
+                  "px-2 py-2 text-center sm:px-3 sm:py-2.5",
+                  col.key === "name" &&
+                    "sticky left-[52px] z-10 bg-paper shadow-[1px_0_0_var(--color-line)]"
+                )}
               >
                 <button
                   onClick={() => toggle(col.key)}
                   className={cn(
-                    "inline-flex items-center gap-1 text-[13px] font-semibold",
+                    "inline-flex items-center gap-1 text-[12px] font-semibold sm:text-[13px]",
                     sort.key === col.key ? "text-punch" : "text-mist hover:text-ink"
                   )}
                 >
@@ -575,22 +579,22 @@ function MemberTable({ members, config }: { members: Idol[]; config: EngineConfi
               onClick={() => navigate(`/idol/${row.idol.id}`)}
               onKeyDown={(e) => e.key === "Enter" && navigate(`/idol/${row.idol.id}`)}
               tabIndex={0}
-              className="cursor-pointer border-b border-line/70 last:border-0 hover:bg-sleeve/70"
+              className="group cursor-pointer border-b border-line/70 last:border-0 hover:bg-sleeve/70"
             >
-              <td className="px-3 py-2">
+              <td className="sticky left-0 z-10 bg-paper px-2 py-1.5 group-hover:bg-sleeve sm:px-3 sm:py-2">
                 <div className="h-9 w-9 overflow-hidden rounded-lg">
                   <Portrait idol={row.idol} className="h-full w-full" />
                 </div>
               </td>
-              <td className="px-3 py-2 text-center font-semibold">{row.idol.stageName}</td>
-              <td className="px-3 py-2 text-center">{roleLabel(row.idol.roles[0] ?? "")}</td>
+              <td className="sticky left-[52px] z-10 bg-paper px-2 py-1.5 text-center font-semibold shadow-[1px_0_0_var(--color-line)] group-hover:bg-sleeve sm:px-3 sm:py-2">{row.idol.stageName}</td>
+              <td className="px-2 py-1.5 text-center sm:px-3 sm:py-2">{roleLabel(row.idol.roles[0] ?? "")}</td>
               {(["vocal", "rap", "dance", "stage", "visual"] as const).map((k) => (
-                <td key={k} className={cn("tnum px-3 py-2 text-center", statTone(row.cats[k]))}>
+                <td key={k} className={cn("tnum px-2 py-1.5 text-center sm:px-3 sm:py-2", statTone(row.cats[k]))}>
                   {Math.round(row.cats[k])}
                 </td>
               ))}
-              <td className="tnum px-3 py-2 text-center">{row.idol.popularity}</td>
-              <td className="px-3 py-2 text-center">
+              <td className="tnum px-2 py-1.5 text-center sm:px-3 sm:py-2">{row.idol.popularity}</td>
+              <td className="px-2 py-1.5 text-center sm:px-3 sm:py-2">
                 <OvrBadge ovr={row.ovr} size="sm" />
               </td>
             </tr>

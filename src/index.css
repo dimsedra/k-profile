@@ -73,10 +73,29 @@ body {
   animation: card-settle 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Role-chip marquee inside photocards: single line, loops seamlessly
+   (the track holds two identical halves, so -50% is a perfect loop) */
+@keyframes card-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.card-marquee {
+  animation: card-marquee 12s linear infinite;
+}
+
+.card-marquee:hover {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card-settle {
     animation: none;
     transform: rotate(3deg);
+  }
+  .card-marquee {
+    animation: none;
   }
   * {
     transition-duration: 0.01ms !important;

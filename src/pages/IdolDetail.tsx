@@ -42,6 +42,10 @@ export function IdolDetail({ id }: { id: number }) {
     (g) => g.name.toLowerCase() === idol.group.toLowerCase()
   )?.id;
 
+  // Uniform compact header for every idol: no per-name conditions,
+  // nothing truncates.
+  const subText = `${idol.group} — ${idol.roles.map((r, i) => `${i + 1}. ${roleLabel(r)}`).join(", ")}`;
+
   const facts: [string, string][] = [
     ["Real name", idol.realName ?? ""],
     ["Group", idol.group],
@@ -55,7 +59,7 @@ export function IdolDetail({ id }: { id: number }) {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
         {/* Left pane — the card and the person */}
-        <div>
+        <div className="min-w-0">
           <PhotoCard idol={idol} ovr={breakdown.ovr} />
           {isAdmin && (
             <div className="mt-4 flex gap-2">
@@ -101,8 +105,8 @@ export function IdolDetail({ id }: { id: number }) {
             <dl className="space-y-2.5">
               {facts.map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4 text-[14px]">
-                  <dt className="text-mist">{k}</dt>
-                  <dd className="text-right font-medium">
+                  <dt className="shrink-0 text-mist">{k}</dt>
+                  <dd className="min-w-0 break-words text-right font-medium">
                     {k === "Group" && groupId !== undefined ? (
                       <a href={`#/group/${groupId}`} className="text-punch hover:underline">
                         {v}
@@ -115,8 +119,8 @@ export function IdolDetail({ id }: { id: number }) {
               ))}
               {idol.customFields.map((f) => (
                 <div key={f.id} className="flex justify-between gap-4 text-[14px]">
-                  <dt className="text-mist">{f.label}</dt>
-                  <dd className="text-right font-medium">{f.value}</dd>
+                  <dt className="shrink-0 text-mist">{f.label}</dt>
+                  <dd className="min-w-0 break-words text-right font-medium">{f.value}</dd>
                 </div>
               ))}
             </dl>
@@ -124,15 +128,17 @@ export function IdolDetail({ id }: { id: number }) {
         </div>
 
         {/* Right pane — the numbers */}
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="truncate font-display text-4xl font-extrabold leading-none sm:text-5xl">{idol.stageName}</h1>
-              <p className="mt-2 truncate text-[14px] text-mist">
-                {idol.group} — {idol.roles.map((r, i) => `${i + 1}. ${roleLabel(r)}`).join(", ")}
+              <h1 className="font-display text-[29px] font-extrabold leading-none sm:text-5xl">
+                {idol.stageName}
+              </h1>
+              <p className="mt-2 truncate text-[12px] text-mist sm:text-[14px]">
+                {subText}
               </p>
             </div>
-            <OvrBadge ovr={breakdown.ovr} size="xl" className="shrink-0 shadow-sm" />
+            <OvrBadge ovr={breakdown.ovr} size="lg" className="shrink-0 shadow-sm" />
           </div>
 
           {/* How the rating is built + attribute pentagon */}
@@ -141,22 +147,22 @@ export function IdolDetail({ id }: { id: number }) {
               <PentagonChart values={breakdown.cats} />
             </Panel>
             <Panel title="How this rating is built">
-            <div className="space-y-2">
+            <div className="space-y-3">
               {breakdown.roleScores.map((r) => (
-                <div key={r.roleId} className="flex items-center gap-3 text-[14px]">
-                  <span className="w-36 shrink-0 font-medium">{roleLabel(r.roleId)}</span>
-                  <div className="h-1.5 flex-1 rounded-full bg-line">
+                <div key={r.roleId} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[14px]">
+                  <span className="order-1 w-28 shrink-0 truncate font-medium sm:w-36">{roleLabel(r.roleId)}</span>
+                  <span className={cn("tnum order-2 ml-auto w-10 text-right font-semibold sm:ml-0", statTone(r.score))}>
+                    {r.score.toFixed(1)}
+                  </span>
+                  <span className="tnum order-3 w-14 text-right text-[13px] text-mist">
+                    × {(r.weight * 100).toFixed(0)}%
+                  </span>
+                  <div className="order-4 h-1 basis-full rounded-full bg-line sm:order-2 sm:basis-auto sm:flex-1">
                     <div
                       className="h-full rounded-full bg-holo"
                       style={{ width: `${((r.score - 40) / 59) * 100}%` }}
                     />
                   </div>
-                  <span className={cn("tnum w-10 text-right font-semibold", statTone(r.score))}>
-                    {r.score.toFixed(1)}
-                  </span>
-                  <span className="tnum w-14 text-right text-[13px] text-mist">
-                    × {(r.weight * 100).toFixed(0)}%
-                  </span>
                 </div>
               ))}
             </div>

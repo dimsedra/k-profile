@@ -54,6 +54,7 @@ export function Binder() {
             }}
             placeholder="Search stage name, real name, or group…"
             ariaLabel="Search photocards"
+            dense
             className="w-full sm:w-80"
           />
         </div>

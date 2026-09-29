@@ -178,28 +178,32 @@ export function ScoutingTable() {
         <div>
           <h1 className="font-display text-2xl font-bold">Scouting table</h1>
           <p className="mt-1 text-[13px] text-mist">
-            Click a column to sort. Shift-click adds a secondary sort. Click a row to open the full sheet.
+            Click a column to sort.{" "}
+            <span className="hidden sm:inline">Shift-click adds a secondary sort. </span>
+            <span className="sm:hidden">Swipe sideways to see every column. </span>
+            Click a row to open the full sheet.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
           <p className="tnum text-[13px] text-mist sm:text-right">
             {visible.length} of {rows.length} idols shown
           </p>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <SearchInput
               value={filters.search}
               onChange={(v) => setFilters((f) => ({ ...f, search: v }))}
               placeholder="Search name or group…"
               ariaLabel="Search table"
-              className="w-full sm:w-64"
+              dense
+              className="min-w-0 flex-1 sm:w-64 sm:flex-none"
             />
-            <div ref={filterRef} className="relative">
+            <div ref={filterRef} className="relative shrink-0">
           <button
             onClick={() => setFilterOpen((o) => !o)}
             aria-haspopup="dialog"
             aria-expanded={filterOpen}
             className={cn(
-              "rounded-lg border px-3 py-1.5 text-[14px] font-medium",
+              "inline-flex h-[34px] items-center rounded-lg border px-3 text-[13px] font-medium sm:h-auto sm:py-1.5 sm:text-[14px]",
               activeFilterCount > 0
                 ? "border-ink bg-ink text-white"
                 : "border-line bg-paper text-mist hover:text-ink"
@@ -211,7 +215,7 @@ export function ScoutingTable() {
             <div
               role="dialog"
               aria-label="Table filters"
-              className="absolute right-0 top-full z-50 mt-1.5 max-h-[70vh] w-80 space-y-4 overflow-auto rounded-xl border border-line bg-paper p-4 shadow-lg"
+              className="absolute right-0 top-full z-50 mt-1.5 max-h-[70vh] w-[min(20rem,calc(100vw-2rem))] space-y-2.5 overflow-auto rounded-xl border border-line bg-paper p-3 shadow-lg sm:w-80 sm:space-y-4 sm:p-4 [&_input]:text-base [&_input]:sm:text-[13px]"
             >
               <FilterGroupSearch
                 options={groups.map((g) => g.name)}
@@ -248,22 +252,27 @@ export function ScoutingTable() {
                   className="w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px]"
                 />
               </div>
-              {(Object.keys(filters.catMin) as CategoryKey[]).map((k) => (
-                <div key={k} className="flex items-center gap-2">
-                  <span className="w-24 shrink-0 text-[13px] font-medium capitalize">{k} ≥</span>
-                  <input
-                    type="number" min={40} max={99} placeholder="—" aria-label={`Minimum ${k}`}
-                    value={filters.catMin[k] ?? ""}
-                    onChange={(e) =>
-                      setFilters((f) => ({
-                        ...f,
-                        catMin: { ...f.catMin, [k]: e.target.value === "" ? null : Number(e.target.value) },
-                      }))
-                    }
-                    className="w-full rounded-md border border-line bg-paper px-2 py-1 text-[13px]"
-                  />
+              <div>
+                <p className="mb-1.5 text-[13px] font-medium">Category min</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(Object.keys(filters.catMin) as CategoryKey[]).map((k) => (
+                    <label key={k} className="flex items-center gap-1.5">
+                      <span className="w-12 shrink-0 text-[12px] font-medium capitalize">{k} ≥</span>
+                      <input
+                        type="number" min={40} max={99} placeholder="—" aria-label={`Minimum ${k}`}
+                        value={filters.catMin[k] ?? ""}
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            catMin: { ...f.catMin, [k]: e.target.value === "" ? null : Number(e.target.value) },
+                          }))
+                        }
+                        className="w-full min-w-0 rounded-md border border-line bg-paper px-2 py-1 text-[13px]"
+                      />
+                    </label>
+                  ))}
                 </div>
-              ))}
+              </div>
               <div>
                 <p className="mb-1.5 text-[13px] font-medium">Gender</p>
                 <div className="flex gap-1.5">
@@ -335,22 +344,27 @@ export function ScoutingTable() {
 
       {/* Table */}
       <div className="mt-5 overflow-x-auto rounded-2xl border border-line bg-paper">
-        <table className="w-full min-w-[980px] border-collapse text-[14px]">
+        <table className="w-full min-w-[840px] border-collapse text-[12px] sm:min-w-[980px] sm:text-[14px]">
           <thead>
             <tr className="border-b border-line">
-              <th className="w-12 px-3 py-2.5" aria-label="Portrait" />
+              <th className="sticky left-0 z-10 w-[52px] bg-paper px-2 py-2 sm:px-3 sm:py-2.5" aria-label="Portrait" />
               {COLUMNS.map((col) => {
                 const idx = sorts.findIndex((s) => s.key === col.key);
                 const active = idx >= 0;
+                const stickyName = col.key === "name";
                 return (
                   <th
                     key={col.key}
-                    className="px-3 py-2.5 text-center"
+                    className={cn(
+                      "px-2 py-2 text-center sm:px-3 sm:py-2.5",
+                      stickyName &&
+                        "sticky left-[52px] z-10 bg-paper shadow-[1px_0_0_var(--color-line)]"
+                    )}
                   >
                     <button
                       onClick={(e) => toggleSort(col.key, e.shiftKey)}
                       className={cn(
-                        "inline-flex items-center gap-1 text-[13px] font-semibold",
+                        "inline-flex items-center gap-1 text-[12px] font-semibold sm:text-[13px]",
                         active ? "text-punch" : "text-mist hover:text-ink"
                       )}
                     >
@@ -374,25 +388,25 @@ export function ScoutingTable() {
                 onClick={() => navigate(`/idol/${row.idol.id}`)}
                 onKeyDown={(e) => e.key === "Enter" && navigate(`/idol/${row.idol.id}`)}
                 tabIndex={0}
-                className="cursor-pointer border-b border-line/70 last:border-0 hover:bg-sleeve/70"
+                className="group cursor-pointer border-b border-line/70 last:border-0 hover:bg-sleeve/70"
               >
-                <td className="px-3 py-2">
+                <td className="sticky left-0 z-10 bg-paper px-2 py-1.5 group-hover:bg-sleeve sm:px-3 sm:py-2">
                   <div className="h-9 w-9 overflow-hidden rounded-lg">
                     <Portrait idol={row.idol} className="h-full w-full" />
                   </div>
                 </td>
-                <td className="px-3 py-2 text-center font-semibold">{row.idol.stageName}</td>
-                <td className="px-3 py-2 text-center text-mist">{row.idol.group}</td>
-                <td className="px-3 py-2 text-center text-mist">{row.idol.gender}</td>
-                <td className="tnum px-3 py-2 text-center text-mist">{row.idol.generation}</td>
-                <td className="px-3 py-2 text-center">{roleLabel(row.idol.roles[0] ?? "")}</td>
+                <td className="sticky left-[52px] z-10 bg-paper px-2 py-1.5 text-center font-semibold shadow-[1px_0_0_var(--color-line)] group-hover:bg-sleeve sm:px-3 sm:py-2">{row.idol.stageName}</td>
+                <td className="px-2 py-1.5 text-center text-mist sm:px-3 sm:py-2">{row.idol.group}</td>
+                <td className="px-2 py-1.5 text-center text-mist sm:px-3 sm:py-2">{row.idol.gender}</td>
+                <td className="tnum px-2 py-1.5 text-center text-mist sm:px-3 sm:py-2">{row.idol.generation}</td>
+                <td className="px-2 py-1.5 text-center sm:px-3 sm:py-2">{roleLabel(row.idol.roles[0] ?? "")}</td>
                 {(["vocal", "rap", "dance", "stage", "visual"] as const).map((k) => (
-                  <td key={k} className={cn("tnum px-3 py-2 text-center", statTone(row.cats[k]))}>
+                  <td key={k} className={cn("tnum px-2 py-1.5 text-center sm:px-3 sm:py-2", statTone(row.cats[k]))}>
                     {Math.round(row.cats[k])}
                   </td>
                 ))}
-                <td className={cn("tnum px-3 py-2 text-center", statTone(row.idol.popularity))}>{row.idol.popularity}</td>
-                <td className="px-3 py-2 text-center">
+                <td className={cn("tnum px-2 py-1.5 text-center sm:px-3 sm:py-2", statTone(row.idol.popularity))}>{row.idol.popularity}</td>
+                <td className="px-2 py-1.5 text-center sm:px-3 sm:py-2">
                   <OvrBadge ovr={row.ovr} size="sm" />
                 </td>
               </tr>

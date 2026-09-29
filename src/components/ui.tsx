@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "../utils/cn";
 import { tierOf, roleLabel, type CategoryKey, type Idol } from "../engine/ovr";
 
@@ -107,7 +107,7 @@ export function PentagonChart({
 
   return (
     <svg
-      viewBox="0 0 220 220"
+      viewBox="-20 -20 260 260"
       width={size}
       height={size}
       role="img"
@@ -265,6 +265,33 @@ export function PhotoCard({
 }) {
   const tier = tierOf(ovr);
   const holo = tier === "holo";
+  const outerRef = useRef<HTMLDivElement>(null);
+  const copyRef = useRef<HTMLDivElement>(null);
+  // Marquee only when the chips actually overflow — measured, not guessed,
+  // so wide cards with few roles stay perfectly still.
+  const [marquee, setMarquee] = useState(idol.roles.length > 2);
+
+  useEffect(() => {
+    const outer = outerRef.current;
+    const copy = copyRef.current;
+    if (!outer || !copy) return;
+    const check = () => setMarquee(copy.scrollWidth > outer.clientWidth + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(outer);
+    ro.observe(copy);
+    return () => ro.disconnect();
+  }, [idol.roles]);
+
+  const chips = idol.roles.map((r, i) => (
+    <span
+      key={`${r}-${i}`}
+      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/15 px-1.5 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm"
+    >
+      <span className="text-white/60 tnum">{i + 1}</span>
+      {roleLabel(r)}
+    </span>
+  ));
 
   const card = (
     <div
@@ -283,20 +310,27 @@ export function PhotoCard({
       />
       <OvrBadge ovr={ovr} size="md" className="absolute left-3 top-3 shadow-sm" />
       <div className="absolute inset-x-0 bottom-0 p-3.5">
-        <p className="font-display font-bold text-white text-lg leading-tight">
+        <p className="truncate font-display font-bold text-white text-lg leading-tight">
           {idol.stageName}
         </p>
-        <p className="text-white/75 text-[13px] mt-0.5">{idol.group}</p>
-        <div className="mt-2 flex flex-wrap gap-1">
-          {idol.roles.slice(0, 3).map((r, i) => (
-            <span
-              key={r}
-              className="inline-flex items-center gap-1 rounded-md bg-white/15 px-1.5 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm"
-            >
-              <span className="text-white/60 tnum">{i + 1}</span>
-              {roleLabel(r)}
-            </span>
-          ))}
+        <p className="truncate text-white/75 text-[13px] mt-0.5">{idol.group}</p>
+        <div
+          ref={outerRef}
+          className={cn(
+            "mt-2 overflow-hidden",
+            marquee && "[mask-image:linear-gradient(to_right,black_82%,transparent_100%)]"
+          )}
+        >
+          <div className={cn("flex w-max items-center", marquee && "card-marquee")}>
+            <div ref={copyRef} className="flex items-center gap-1 pr-1">
+              {chips}
+            </div>
+            {marquee && (
+              <div aria-hidden className="flex items-center gap-1 pr-1">
+                {chips}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
