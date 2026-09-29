@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore } from "../store";
 import {
   CATEGORIES,
+  NON_SCORING_ROLES,
   ROLES,
   roleLabel,
   type CategoryKey,
@@ -364,12 +365,12 @@ export function Settings() {
       <p className="mt-1 text-[13px] text-mist">
         Each role weighs the five categories differently — and always totals
         100%. Roles are then ranked best-first per idol and blended with
-        decay weights.
+        decay weights. The Leader tag is display-only and never enters the math.
       </p>
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
         <Panel>
           <div className="flex flex-wrap gap-1.5">
-            {ROLES.map((r) => (
+            {ROLES.filter((r) => !NON_SCORING_ROLES.includes(r.id)).map((r) => (
               <button
                 key={r.id}
                 onClick={() => setActiveRole(r.id)}

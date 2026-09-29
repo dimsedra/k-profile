@@ -87,6 +87,7 @@ export const ROLES: RoleDef[] = [
   { id: "mainVocal", label: "Main Vocalist" },
   { id: "leadVocal", label: "Lead Vocalist" },
   { id: "mainRapper", label: "Main Rapper" },
+  { id: "leadRapper", label: "Lead Rapper" },
   { id: "mainDancer", label: "Main Dancer" },
   { id: "leadDancer", label: "Lead Dancer" },
   { id: "visual", label: "Visual" },
@@ -94,6 +95,13 @@ export const ROLES: RoleDef[] = [
   { id: "leader", label: "Leader" },
   { id: "allRounder", label: "All-Rounder" },
 ];
+
+/**
+ * Tags that never enter the rating math. Leadership is not a skill
+ * stereotype across the five categories, so the tag stays visible
+ * everywhere (sheets, tables, filters) but is skipped by computeOvr.
+ */
+export const NON_SCORING_ROLES = ["leader"];
 
 export const roleLabel = (id: string) =>
   ROLES.find((r) => r.id === id)?.label ?? id;
@@ -149,6 +157,7 @@ export const DEFAULT_CONFIG: EngineConfig = {
     mainVocal: { vocal: 55, rap: 5, dance: 10, stage: 20, visual: 10 },
     leadVocal: { vocal: 45, rap: 5, dance: 20, stage: 20, visual: 10 },
     mainRapper: { vocal: 5, rap: 55, dance: 15, stage: 20, visual: 5 },
+    leadRapper: { vocal: 10, rap: 45, dance: 20, stage: 20, visual: 5 },
     mainDancer: { vocal: 10, rap: 5, dance: 55, stage: 20, visual: 10 },
     leadDancer: { vocal: 15, rap: 5, dance: 45, stage: 20, visual: 15 },
     visual: { vocal: 10, rap: 5, dance: 10, stage: 25, visual: 50 },
@@ -198,12 +207,13 @@ export interface OvrBreakdown {
   ovr: number;
 }
 
-/** Full three-tier calculation */
+/** Full three-tier calculation (display-only tags excluded from Tier 2) */
 export function computeOvr(idol: Idol, cfg: EngineConfig): OvrBreakdown {
   const cats = categoryScores(idol, cfg);
 
   // Tier 2 — Ranked Role Decay
   const scored = idol.roles
+    .filter((roleId) => !NON_SCORING_ROLES.includes(roleId))
     .map((roleId) => ({ roleId, score: roleScore(cats, roleId, cfg) }))
     .sort((a, b) => b.score - a.score);
 
