@@ -212,6 +212,15 @@ function MiniChip({ label, idol, onChange }: { label: string; idol: Idol; onChan
   );
 }
 
+/** Delta treatment by gap size: near-ties fade out, big gaps shout in the leader's side color. */
+function deltaTone(d: number): string {
+  const m = Math.abs(d);
+  if (m < 0.05) return "text-mist/50";
+  if (m < 3) return "text-mist/70";
+  if (m < 7) return `font-semibold ${d > 0 ? "text-punch/80" : "text-holo/80"}`;
+  return `font-bold ${d > 0 ? "text-punch" : "text-holo"}`;
+}
+
 function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: string; a: number; b: number; decimals?: number; strong?: boolean }) {
   const d = a - b;
   const fmt = (v: number) => v.toFixed(decimals);
@@ -231,7 +240,7 @@ function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: strin
         <span className={cn("max-w-full overflow-hidden text-ellipsis whitespace-nowrap", strong ? "font-display text-[13px] font-bold sm:text-base" : "text-[13px] text-mist sm:text-sm")}>
           {label}
         </span>
-        <span className="tnum text-[11px] text-mist/70 sm:text-xs">
+        <span className={cn("tnum text-[11px] sm:text-xs", deltaTone(d))}>
           {d === 0 ? "—" : `${d > 0 ? "+" : "−"}${fmt(Math.abs(d))}`}
         </span>
       </span>
