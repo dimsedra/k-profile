@@ -134,18 +134,18 @@ export function PentagonChart({
       <polygon
         points={points(PENTA_ORDER.map((k) => radiusOf(values[k])))}
         fill="var(--color-punch)"
-        fillOpacity="0.18"
+        fillOpacity="0.24"
         stroke="var(--color-punch)"
-        strokeWidth="2"
+        strokeWidth="3"
         strokeLinejoin="round"
       />
       {valuesB && (
         <polygon
           points={points(PENTA_ORDER.map((k) => radiusOf(valuesB[k])))}
           fill="var(--color-holo)"
-          fillOpacity="0.12"
+          fillOpacity="0.18"
           stroke="var(--color-holo)"
-          strokeWidth="2"
+          strokeWidth="3"
           strokeLinejoin="round"
         />
       )}
@@ -154,7 +154,7 @@ export function PentagonChart({
         const [lx, ly] = polar(i, R + 18);
         return (
           <g key={k}>
-            <circle cx={x} cy={y} r="3.5" fill="var(--color-punch)" />
+            <circle cx={x} cy={y} r="4.5" fill="var(--color-punch)" />
             <text
               x={lx}
               y={ly}
@@ -172,7 +172,7 @@ export function PentagonChart({
       {valuesB &&
         PENTA_ORDER.map((k, i) => {
           const [x, y] = polar(i, radiusOf(valuesB[k]));
-          return <circle key={k} cx={x} cy={y} r="3.5" fill="var(--color-holo)" />;
+          return <circle key={k} cx={x} cy={y} r="4.5" fill="var(--color-holo)" />;
         })}
     </svg>
   );
