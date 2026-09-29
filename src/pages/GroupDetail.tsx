@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useStore } from "../store";
 import { OvrBadge, Panel, PhotoCard, Portrait, StatBar, statTone } from "../components/ui";
 import { SuggestInput } from "../components/SuggestInput";
+import { isExternalPhoto } from "../store";
 import { CATEGORIES, computeOvr, ovrOf, roleLabel, type CategoryKey, type EngineConfig, type Idol } from "../engine/ovr";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
@@ -22,6 +23,8 @@ export function GroupDetail({ id }: { id: number }) {
   const [fandomName, setFandomName] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
+  const [photoLink, setPhotoLink] = useState("");
+  const initialLinkRef = useRef("");
   const [error, setError] = useState("");
   const [removeError, setRemoveError] = useState("");
   const [confirmingRemove, setConfirmingRemove] = useState(false);
@@ -69,6 +72,9 @@ export function GroupDetail({ id }: { id: number }) {
     setFandomName(group.fandomName);
     setPhotoFile(null);
     setRemovePhoto(false);
+    const currentLink = group.photo && isExternalPhoto(group.photo) ? group.photo : "";
+    setPhotoLink(currentLink);
+    initialLinkRef.current = currentLink;
     setError("");
     setEditing(true);
   };
@@ -125,7 +131,7 @@ export function GroupDetail({ id }: { id: number }) {
         agency,
         fandomName,
       },
-      { photoFile, removePhoto }
+      { photoFile, removePhoto, photoLink: photoFile || removePhoto || photoLink === initialLinkRef.current ? undefined : photoLink }
     );
     setBusy(false);
     if (msg) return setError(msg);
@@ -344,6 +350,35 @@ export function GroupDetail({ id }: { id: number }) {
                   if (f) pickFile(f);
                 }}
               />
+              <div className="mt-3 border-t border-line pt-3">
+                <label className={labelCls} htmlFor="g-photolink">Or paste an image link</label>
+                <div className="flex gap-2">
+                  <input
+                    id="g-photolink" className={inputCls} value={photoLink}
+                    onChange={(e) => setPhotoLink(e.target.value)}
+                    placeholder="https://…"
+                    inputMode="url"
+                  />
+                  <button
+                    onClick={() => {
+                      const link = photoLink.trim();
+                      if (link && !isExternalPhoto(link)) {
+                        setError("That link isn't a valid http(s) image URL.");
+                        return;
+                      }
+                      setPhotoFile(null);
+                      setRemovePhoto(false);
+                      setError("");
+                    }}
+                    className="shrink-0 rounded-lg bg-punch/10 px-3 py-2 text-[13px] font-semibold text-punch hover:bg-punch hover:text-white"
+                  >
+                    Use link
+                  </button>
+                </div>
+                <p className="mt-1 text-[12px] text-mist">
+                  Links cost zero bucket quota. Uploading a file replaces the link.
+                </p>
+              </div>
             </div>
             <div className="sm:col-span-2">
               <label className={labelCls} htmlFor="g-bio">Bio</label>

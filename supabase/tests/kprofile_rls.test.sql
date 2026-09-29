@@ -4,7 +4,7 @@
 -- Admin-allow paths are verified end-to-end over REST (see e2e check),
 -- because pgTAP cannot mint a JWT carrying app_metadata claims.
 begin;
-select plan(25);
+select plan(27);
 
 -- Fixtures inserted as table owner (bypasses RLS).
 insert into public.groups (name) values ('Probe Group');
@@ -31,6 +31,12 @@ select throws_ok(
   null,
   'idols cannot reference a missing group'
 );
+select throws_ok(
+  $$insert into public.idols (stage_name, group_id, photo_url) values ('Linkless', (select id from public.groups limit 1), 'ftp://x')$$,
+  '23514',
+  null,
+  'photo links must be http(s)'
+);
 
 -- anon: public catalog is readable, groups included.
 set local role anon;
@@ -53,6 +59,16 @@ select results_eq(
   $$select name from public.groups where name = 'Probe Group'$$,
   array['Probe Group'],
   'anon reads the group list'
+);
+select results_eq(
+  $$select name from public.agencies where name = 'Probe Agency'$$,
+  array['Probe Agency'],
+  'anon reads the agency list'
+);
+select results_eq(
+  $$select photo_url from public.groups where name = 'Probe Group'$$,
+  array[null]::text[],
+  'anon reads group photo links'
 );
 select results_eq(
   $$select bio from public.groups where name = 'Probe Group'$$,
@@ -91,11 +107,6 @@ select throws_ok(
   '42501',
   null,
   'anon cannot insert groups'
-);
-select results_eq(
-  $$select name from public.agencies where name = 'Probe Agency'$$,
-  array['Probe Agency'],
-  'anon reads the agency list'
 );
 select throws_ok(
   $$insert into public.agencies (name) values ('Nope')$$,

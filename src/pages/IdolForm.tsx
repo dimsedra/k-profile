@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useStore } from "../store";
+import { isExternalPhoto, useStore } from "../store";
 import {
   CATEGORIES,
   computeOvr,
@@ -49,6 +49,7 @@ export function IdolForm({ editId }: { editId?: number }) {
   const [dragOver, setDragOver] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
+  const [linkInput, setLinkInput] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   // The store loads async: if the sheet wasn't available on first render
@@ -298,6 +299,53 @@ export function IdolForm({ editId }: { editId?: number }) {
               </div>
               <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) readPhoto(f); }} />
+              <div className="mt-3 border-t border-line pt-3">
+                <label className="mb-1.5 block text-[13px] font-semibold" htmlFor="f-photolink">
+                  Or paste an image link
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="f-photolink" className={inputCls} value={linkInput}
+                    onChange={(e) => setLinkInput(e.target.value)}
+                    placeholder="https://…"
+                    inputMode="url"
+                  />
+                  <button
+                    onClick={() => {
+                      const link = linkInput.trim();
+                      if (!isExternalPhoto(link)) {
+                        setError("That link isn't a valid http(s) image URL.");
+                        return;
+                      }
+                      if (draft.photo && draft.photo.startsWith("blob:")) URL.revokeObjectURL(draft.photo);
+                      setPhotoFile(null);
+                      setRemovePhoto(false);
+                      setError("");
+                      set({ photo: link });
+                    }}
+                    className="shrink-0 rounded-lg bg-punch/10 px-3 py-2 text-[13px] font-semibold text-punch hover:bg-punch hover:text-white"
+                  >
+                    Use link
+                  </button>
+                </div>
+                {draft.photo && isExternalPhoto(draft.photo) && (
+                  <p className="mt-1.5 flex items-center gap-2 text-[12px] text-mist">
+                    <span className="min-w-0 flex-1 truncate">Linked: {draft.photo}</span>
+                    <button
+                      onClick={() => {
+                        setLinkInput("");
+                        set({ photo: undefined });
+                      }}
+                      className="shrink-0 font-medium hover:text-punch"
+                    >
+                      Remove link
+                    </button>
+                  </p>
+                )}
+                <p className="mt-1 text-[12px] text-mist">
+                  Links cost zero bucket quota. If a link dies, the card falls back to initials.
+                </p>
+              </div>
             </div>
           </Panel>
 

@@ -37,6 +37,7 @@ interface IdolRow {
   photo_kind: string;
   popularity: number;
   updated_at: string;
+  photo_url: string | null;
 }
 
 interface RoleRow {
@@ -97,7 +98,17 @@ interface EngineRow {
 const errMsg = (e: unknown, fallback: string) =>
   e instanceof Error ? e.message : fallback;
 
+/** External http(s) photo link (not one of our storage object URLs). */
+export const isExternalPhoto = (u?: string) =>
+  !!u && /^https?:\/\//i.test(u) && !u.includes("/storage/v1/object/");
+
 const CAT_KEYS: CategoryKey[] = ["vocal", "rap", "dance", "stage", "visual"];
+
+interface PhotoCols {
+  photo_path: string | null;
+  photo_kind: string;
+  photo_url: string | null;
+}
 
 /**
  * Engine weights must carry exact canonical keys (atomic attr keys per
@@ -170,7 +181,11 @@ function toIdol(
     debutYear: row.debut_year ?? undefined,
     agency: agencyName,
     bio: row.bio,
-    photo: row.photo_path ? versionedPhotoUrl(row.photo_path, row.updated_at) : undefined,
+    photo: row.photo_url
+      ? row.photo_url
+      : row.photo_path
+        ? versionedPhotoUrl(row.photo_path, row.updated_at)
+        : undefined,
     photoPath: row.photo_path ?? undefined,
     photoKind: row.photo_kind as Idol["photoKind"],
     roles: roles.map((r) => r.role_id),
@@ -212,14 +227,14 @@ interface Store {
   groupStats: (groupId: number) => GroupStats | null;
   groupMemberIds: (groupId: number) => number[];
   addGroup: (
-    input: { name: string; bio: string; debutYear?: number; agency: string; fandomName: string },
+    input: { name: string; bio: string; debutYear?: number; agency: string; fandomName: string; photoUrl?: string },
     photoFile?: File | null
   ) => Promise<{ id?: number; error?: string }>;
   deleteGroup: (id: number) => Promise<string | null>;
   updateGroup: (
     id: number,
     patch: { bio: string; debutYear?: number; agency: string; fandomName: string; photoFocus?: { x: number; y: number } },
-    opts?: { photoFile?: File | null; removePhoto?: boolean }
+    opts?: { photoFile?: File | null; removePhoto?: boolean; photoLink?: string | null }
   ) => Promise<string | null>;
   deleteFieldDef: (id: number) => Promise<string | null>;
 }
@@ -323,9 +338,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         groupRows.map((g) => ({
           id: g.id as number,
           name: g.name as string,
-          photo: g.photo_path
-            ? versionedPhotoUrl(g.photo_path as string, g.updated_at as string)
-            : undefined,
+          photo: (g.photo_url as string | null)
+            ? (g.photo_url as string)
+            : g.photo_path
+              ? versionedPhotoUrl(g.photo_path as string, g.updated_at as string)
+              : undefined,
           photoPath: (g.photo_path as string | null) ?? undefined,
           photoKind: ((g.photo_kind as string) ?? "image") as GroupEntry["photoKind"],
           photoFocus: {
@@ -452,10 +469,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
     const { error: rowError } = await sb
       .from("idols")
-      .update({ photo_path: path, photo_kind: kind, updated_at: new Date().toISOString() })
+      .update({ photo_path: path, photo_kind: kind, photo_url: null, updated_at: new Date().toISOString() })
       .eq("id", idolId);
     if (rowError) throw rowError;
   }, []);
+
+  /**
+   * Which photo columns to write from a draft + file options, or null to
+   * leave them alone. Precedence: staged file (caller uploads) > explicit
+   * removal > external link > cleared > untouched bucket URL.
+   */
+  function resolvePhotoColumns(
+    draftPhoto: string | undefined,
+    opts?: { photoFile?: File | null; removePhoto?: boolean }
+  ): PhotoCols | null {
+    if (opts?.photoFile) return null;
+    if (opts?.removePhoto || !draftPhoto)
+      return { photo_path: null, photo_kind: "image", photo_url: null };
+    if (isExternalPhoto(draftPhoto))
+      return { photo_path: null, photo_kind: "image", photo_url: draftPhoto };
+    return null;
+  }
 
   const writeChildren = useCallback(async (idolId: number, draft: Idol) => {
     const sb = getSupabase();
@@ -500,6 +534,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const sb = getSupabase();
         const group_id = await resolveGroupId(draft.group);
         const agency_id = await resolveAgencyId(draft.agency ?? "");
+        const photoCols = resolvePhotoColumns(draft.photo, { photoFile }) ?? {
+          photo_path: null,
+          photo_kind: "image",
+          photo_url: null,
+        };
         const { data, error } = await sb
           .from("idols")
           .insert({
@@ -512,6 +551,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             agency_id,
             bio: draft.bio,
             popularity: draft.popularity,
+            ...photoCols,
           })
           .select("id")
           .single();
@@ -546,9 +586,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           popularity: draft.popularity,
           updated_at: new Date().toISOString(),
         };
-        if (opts?.removePhoto) {
-          patch.photo_path = null;
-          patch.photo_kind = "image";
+        const photoCols = resolvePhotoColumns(draft.photo, opts);
+        if (photoCols) Object.assign(patch, photoCols);
+        if (photoCols && photoCols.photo_path === null && !opts?.photoFile) {
+          // Switching to a link (or clearing) orphans the old bucket object.
           await sb.storage.from(PHOTO_BUCKET).remove([`${draft.id}/portrait`]);
         }
         await sb.from("idols").update(patch).eq("id", draft.id).throwOnError();
@@ -662,7 +703,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addGroup = useCallback(
     async (
-      input: { name: string; bio: string; debutYear?: number; agency: string; fandomName: string },
+      input: { name: string; bio: string; debutYear?: number; agency: string; fandomName: string; photoUrl?: string },
       photoFile?: File | null
     ): Promise<{ id?: number; error?: string }> => {
       try {
@@ -676,6 +717,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         );
         if (hit) return { error: `“${clean}” already exists as a group.`, id: hit.id };
         const agency_id = await resolveAgencyId(input.agency);
+        const link = input.photoUrl?.trim() ?? "";
         const { data: created, error } = await sb
           .from("groups")
           .insert({
@@ -684,6 +726,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             debut_year: input.debutYear ?? null,
             agency_id,
             fandom_name: input.fandomName || null,
+            photo_url: link && isExternalPhoto(link) ? link : null,
           })
           .select("id")
           .single();
@@ -700,6 +743,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             .update({
               photo_path: `group-${id}/portrait`,
               photo_kind: kind,
+              photo_url: null,
               updated_at: new Date().toISOString(),
             })
             .eq("id", id)
@@ -732,7 +776,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     async (
       id: number,
       patch: { bio: string; debutYear?: number; agency: string; fandomName: string; photoFocus?: { x: number; y: number } },
-      opts?: { photoFile?: File | null; removePhoto?: boolean }
+      opts?: { photoFile?: File | null; removePhoto?: boolean; photoLink?: string | null }
     ): Promise<string | null> => {
       try {
         const sb = getSupabase();
@@ -750,6 +794,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (opts?.removePhoto) {
           row.photo_path = null;
           row.photo_kind = "image";
+          row.photo_url = null;
+          await sb.storage.from(PHOTO_BUCKET).remove([`group-${id}/portrait`]);
+        } else if (opts?.photoLink !== undefined) {
+          const link = (opts.photoLink ?? "").trim();
+          if (link && !isExternalPhoto(link)) throw new Error("That link isn't a valid http(s) image URL.");
+          row.photo_path = null;
+          row.photo_kind = "image";
+          row.photo_url = link || null;
+          // A replaced bucket cover would otherwise orphan.
           await sb.storage.from(PHOTO_BUCKET).remove([`group-${id}/portrait`]);
         }
         await sb.from("groups").update(row).eq("id", id).throwOnError();
@@ -762,7 +815,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (error) throw error;
           await sb
             .from("groups")
-            .update({ photo_path: `group-${id}/portrait`, photo_kind: kind })
+            .update({ photo_path: `group-${id}/portrait`, photo_kind: kind, photo_url: null })
             .eq("id", id)
             .throwOnError();
         }

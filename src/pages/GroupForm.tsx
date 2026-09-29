@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useStore } from "../store";
+import { useStore, isExternalPhoto } from "../store";
 import { Panel } from "../components/ui";
 import { SuggestInput } from "../components/SuggestInput";
 import { navigate } from "../router";
@@ -16,6 +16,7 @@ export function GroupForm() {
   const [agency, setAgency] = useState("");
   const [fandomName, setFandomName] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoLink, setPhotoLink] = useState("");
   const [error, setError] = useState("");
   const [dupId, setDupId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,11 +57,24 @@ export function GroupForm() {
       return;
     }
     setPhotoFile(file);
+    setPhotoLink("");
+    setError("");
+  };
+
+  const useLink = () => {
+    const link = photoLink.trim();
+    if (!isExternalPhoto(link)) {
+      setError("That link isn't a valid http(s) image URL.");
+      return;
+    }
+    setPhotoFile(null);
     setError("");
   };
 
   const save = async () => {
     if (!name.trim()) return setError("Group name is required.");
+    if (!photoFile && photoLink.trim() && !isExternalPhoto(photoLink.trim()))
+      return setError("That link isn't a valid http(s) image URL — fix or clear it.");
     setError("");
     setDupId(null);
     setBusy(true);
@@ -71,6 +85,7 @@ export function GroupForm() {
         debutYear: debutYear ? Number(debutYear) : undefined,
         agency,
         fandomName,
+        photoUrl: photoFile ? undefined : photoLink.trim() || undefined,
       },
       photoFile
     );
@@ -159,6 +174,28 @@ export function GroupForm() {
                 if (f) pickFile(f);
               }}
             />
+            <div className="mt-3 border-t border-line pt-3">
+              <label className={labelCls} htmlFor="g-photolink">Or paste an image link</label>
+              <div className="flex gap-2">
+                <input
+                  id="g-photolink" className={inputCls} value={photoLink}
+                  onChange={(e) => setPhotoLink(e.target.value)}
+                  placeholder="https://…"
+                  inputMode="url"
+                />
+                <button
+                  onClick={useLink}
+                  className="shrink-0 rounded-lg bg-punch/10 px-3 py-2 text-[13px] font-semibold text-punch hover:bg-punch hover:text-white"
+                >
+                  Use link
+                </button>
+              </div>
+              {photoLink.trim() && !photoFile && (
+                <p className="mt-1 text-[12px] text-mist">
+                  Linked image will be used — zero bucket quota.
+                </p>
+              )}
+            </div>
           </div>
         </div>
         {error && (

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { cn } from "../utils/cn";
 import { tierOf, roleLabel, type CategoryKey, type Idol } from "../engine/ovr";
 
@@ -222,11 +223,13 @@ export function Portrait({
   idol: Pick<Idol, "stageName" | "photo">;
   className?: string;
 }) {
-  if (idol.photo) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  if (idol.photo && idol.photo !== failedSrc) {
     return (
       <img
         src={idol.photo}
         alt={`${idol.stageName} portrait`}
+        onError={() => setFailedSrc(idol.photo ?? null)}
         className={cn("object-cover", className)}
       />
     );
