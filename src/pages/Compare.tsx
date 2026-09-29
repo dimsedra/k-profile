@@ -31,7 +31,7 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
     : "";
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <h1 className="font-display text-2xl font-bold">Compare idols</h1>
       <p className="mt-1 text-[13px] text-mist">
         Pick two idols to line up their stats side by side.
