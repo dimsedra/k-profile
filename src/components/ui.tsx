@@ -114,7 +114,7 @@ export function PentagonChart({
       height={size}
       role="img"
       aria-label="Attribute pentagon"
-      className="mx-auto block"
+      className="mx-auto block h-auto max-w-full"
     >
       {[40, 60, 80, 100].map((grid) => (
         <polygon

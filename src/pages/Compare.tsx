@@ -92,7 +92,7 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
           <Panel title="Stats" className="mt-4">
             <VersusRow label="Overall rating" a={breakA.ovr} b={breakB.ovr} strong />
             <div className="mt-3 flex flex-col items-center border-t border-line pt-3">
-              <PentagonChart values={breakA.cats} valuesB={breakB.cats} size={200} />
+              <PentagonChart values={breakA.cats} valuesB={breakB.cats} size={280} />
               <div className="mt-1 flex max-w-full items-center justify-center gap-4 text-[13px] text-mist">
                 <span className="inline-flex min-w-0 items-center gap-1.5">
                   <span className="h-2 w-2 shrink-0 rounded-full bg-punch" />
