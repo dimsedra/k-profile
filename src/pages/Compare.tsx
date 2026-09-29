@@ -121,26 +121,26 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
           {/* Desktop: profile-style mirrored headers, photos on the outer sides */}
           <div className="mt-6 hidden grid-cols-2 gap-8 sm:grid">
             <div className="flex min-w-0 items-center gap-4">
-              <span className="h-28 w-20 shrink-0 overflow-hidden rounded-xl ring-1 ring-line">
+              <a href={`#/idol/${idolA.id}`} aria-label={`Open ${idolA.stageName}`} className="h-28 w-20 shrink-0 overflow-hidden rounded-xl ring-1 ring-line">
                 <Portrait idol={idolA} className="h-full w-full" />
-              </span>
+              </a>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-display text-3xl font-extrabold leading-none lg:text-4xl">
+                <a href={`#/idol/${idolA.id}`} className="block truncate font-display text-3xl font-extrabold leading-none hover:text-punch lg:text-4xl">
                   {idolA.stageName}
-                </span>
+                </a>
                 <span className="mt-2 block truncate text-[14px] text-mist">{subA}</span>
               </span>
             </div>
             <div className="flex min-w-0 items-center justify-end gap-4">
               <span className="min-w-0 flex-1 text-right">
-                <span className="block truncate font-display text-3xl font-extrabold leading-none lg:text-4xl">
+                <a href={`#/idol/${idolB.id}`} className="block truncate font-display text-3xl font-extrabold leading-none hover:text-punch lg:text-4xl">
                   {idolB.stageName}
-                </span>
+                </a>
                 <span className="mt-2 block truncate text-[14px] text-mist">{subB}</span>
               </span>
-              <span className="h-28 w-20 shrink-0 overflow-hidden rounded-xl ring-1 ring-line">
+              <a href={`#/idol/${idolB.id}`} aria-label={`Open ${idolB.stageName}`} className="h-28 w-20 shrink-0 overflow-hidden rounded-xl ring-1 ring-line">
                 <Portrait idol={idolB} className="h-full w-full" />
-              </span>
+              </a>
             </div>
           </div>
           <Panel title="Stats" className="mt-4">
