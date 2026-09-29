@@ -10,6 +10,8 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
   const { idols, config, ready } = useStore();
   const idolA = idols.find((i) => String(i.id) === a);
   const idolB = idols.find((i) => String(i.id) === b);
+  // Mobile stepped flow: pick A first, then B, one slot at a time.
+  const [editing, setEditing] = useState<"a" | "b" | null>(null);
 
   if (!ready) {
     return (
@@ -21,6 +23,7 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
 
   const sameIds = !!a && !!b && a === b;
   const showStats = !!idolA && !!idolB && !sameIds;
+  const activeSlot = editing ?? (!idolA ? "a" : !idolB ? "b" : null);
   const breakA = idolA ? computeOvr(idolA, config) : null;
   const breakB = idolB ? computeOvr(idolB, config) : null;
   const subA = idolA
@@ -36,7 +39,8 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
       <p className="mt-1 text-[13px] text-mist">
         Pick two idols to line up their stats side by side.
       </p>
-      <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3">
+      {/* Desktop: both slots side by side */}
+      <div className="mt-5 hidden grid-cols-2 gap-3 sm:grid">
         <IdolSlot
           label="Idol A"
           idol={idolA}
@@ -51,6 +55,56 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
           missingNotice={b && !idolB ? "Couldn't find that idol — pick another." : undefined}
           onPick={(id) => navigate(a ? `/compare/${a}/${id}` : `/compare/${id}/`)}
         />
+      </div>
+      {/* Mobile: stepped flow, one slot at a time */}
+      <div className="mt-5 sm:hidden">
+        {activeSlot === "a" && (
+          <IdolSlot
+            label={idolA ? "Idol A" : "Step 1 — Idol A"}
+            idol={idolA}
+            excludeId={idolB?.id}
+            missingNotice={a && !idolA ? "Couldn't find that idol — pick another." : undefined}
+            onPick={(id) => {
+              setEditing(null);
+              navigate(`/compare/${id}/${b ?? ""}`);
+            }}
+          />
+        )}
+        {activeSlot === "b" && idolA && (
+          <div>
+            <button
+              onClick={() => setEditing("a")}
+              aria-label="Change idol A"
+              className="flex w-full items-center gap-2 rounded-xl border border-line bg-paper p-2 text-left"
+            >
+              <span className="h-7 w-7 shrink-0 overflow-hidden rounded-lg">
+                <Portrait idol={idolA} className="h-full w-full" />
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+                {idolA.stageName}
+              </span>
+              <span className="shrink-0 text-[12px] font-medium text-mist">Change</span>
+            </button>
+            <div className="mt-2">
+              <IdolSlot
+                label={idolB ? "Idol B" : "Step 2 — Idol B"}
+                idol={idolB}
+                excludeId={idolA.id}
+                missingNotice={b && !idolB ? "Couldn't find that idol — pick another." : undefined}
+                onPick={(id) => {
+                  setEditing(null);
+                  navigate(`/compare/${a}/${id}`);
+                }}
+              />
+            </div>
+          </div>
+        )}
+        {activeSlot === null && idolA && idolB && (
+          <div className="grid grid-cols-2 gap-2">
+            <MiniChip label="A" idol={idolA} onChange={() => setEditing("a")} />
+            <MiniChip label="B" idol={idolB} onChange={() => setEditing("b")} />
+          </div>
+        )}
       </div>
       {sameIds && (
         <p role="alert" className="mt-4 rounded-lg bg-punch-soft px-3 py-2 text-[13px] font-medium text-punch">
@@ -135,6 +189,26 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
         </>
       )}
     </div>
+  );
+}
+
+function MiniChip({ label, idol, onChange }: { label: string; idol: Idol; onChange: () => void }) {
+  return (
+    <button
+      onClick={onChange}
+      aria-label={`Change idol ${label}`}
+      className="flex min-w-0 items-center gap-2 rounded-xl border border-line bg-paper p-2 text-left"
+    >
+      <span className="h-8 w-8 shrink-0 overflow-hidden rounded-lg">
+        <Portrait idol={idol} className="h-full w-full" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[10px] font-semibold uppercase tracking-widest text-mist">
+          {label}
+        </span>
+        <span className="block truncate text-[13px] font-semibold">{idol.stageName}</span>
+      </span>
+    </button>
   );
 }
 
