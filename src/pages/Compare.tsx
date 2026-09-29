@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
-import { Panel, PentagonChart, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
+import { OvrBadge, Panel, PentagonChart, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
 import { computeOvr, CATEGORIES, roleLabel } from "../engine/ovr";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
@@ -23,6 +23,12 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
   const showStats = !!idolA && !!idolB && !sameIds;
   const breakA = idolA ? computeOvr(idolA, config) : null;
   const breakB = idolB ? computeOvr(idolB, config) : null;
+  const subA = idolA
+    ? `${idolA.group} — ${idolA.roles.map((r, i) => `${i + 1}. ${roleLabel(r)}`).join(", ")}`
+    : "";
+  const subB = idolB
+    ? `${idolB.group} — ${idolB.roles.map((r, i) => `${i + 1}. ${roleLabel(r)}`).join(", ")}`
+    : "";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
@@ -53,9 +59,37 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
       )}
       {showStats && idolA && idolB && breakA && breakB && (
         <>
-          <div className="mt-6 grid grid-cols-2 gap-4">
+          {/* Mobile: small photocards side by side */}
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:hidden">
             <PhotoCard idol={idolA} ovr={breakA.ovr} />
             <PhotoCard idol={idolB} ovr={breakB.ovr} />
+          </div>
+          {/* Desktop: profile-style mirrored headers, photos on the outer sides */}
+          <div className="mt-6 hidden grid-cols-2 gap-8 sm:grid">
+            <div className="flex min-w-0 items-center gap-4">
+              <span className="h-28 w-20 shrink-0 overflow-hidden rounded-xl ring-1 ring-line">
+                <Portrait idol={idolA} className="h-full w-full" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-display text-3xl font-extrabold leading-none lg:text-4xl">
+                  {idolA.stageName}
+                </span>
+                <span className="mt-2 block truncate text-[14px] text-mist">{subA}</span>
+              </span>
+              <OvrBadge ovr={breakA.ovr} size="lg" className="shrink-0" />
+            </div>
+            <div className="flex min-w-0 items-center gap-4">
+              <OvrBadge ovr={breakB.ovr} size="lg" className="shrink-0" />
+              <span className="min-w-0 flex-1 text-right">
+                <span className="block truncate font-display text-3xl font-extrabold leading-none lg:text-4xl">
+                  {idolB.stageName}
+                </span>
+                <span className="mt-2 block truncate text-[14px] text-mist">{subB}</span>
+              </span>
+              <span className="h-28 w-20 shrink-0 overflow-hidden rounded-xl ring-1 ring-line">
+                <Portrait idol={idolB} className="h-full w-full" />
+              </span>
+            </div>
           </div>
           <Panel title="Stats" className="mt-4">
             <VersusRow label="Overall rating" a={breakA.ovr} b={breakB.ovr} strong />
