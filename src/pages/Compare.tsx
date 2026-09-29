@@ -146,26 +146,26 @@ function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: strin
   return (
     <div className="grid min-h-10 grid-cols-[1fr_7rem_1fr] items-center gap-x-3 text-[14px] sm:grid-cols-[1fr_10rem_1fr]">
       <span className="flex min-w-0 items-center gap-2">
-        <span className="hidden h-1.5 flex-1 rounded-full bg-line sm:block" aria-hidden>
+        <span className="hidden h-1.5 max-w-44 flex-1 rounded-full bg-line sm:block" aria-hidden>
           <span className="ml-auto block h-full rounded-full bg-punch" style={{ width: pct(a) }} />
         </span>
-        <span className={cn("tnum w-12 shrink-0 text-right font-semibold", strong ? "font-display text-lg font-bold" : "text-[15px]", d > 0 && statTone(a))}>
+        <span className={cn("tnum w-12 shrink-0 text-right font-semibold sm:w-14", strong ? "font-display text-lg font-bold sm:text-xl" : "text-[15px] sm:text-lg", d > 0 && statTone(a))}>
           {fmt(a)}
         </span>
       </span>
       <span className="flex min-w-0 flex-col items-center px-1">
-        <span className={cn("max-w-full overflow-hidden text-ellipsis whitespace-nowrap", strong ? "font-display text-[13px] font-bold sm:text-[15px]" : "text-[13px] text-mist")}>
+        <span className={cn("max-w-full overflow-hidden text-ellipsis whitespace-nowrap", strong ? "font-display text-[13px] font-bold sm:text-base" : "text-[13px] text-mist sm:text-sm")}>
           {label}
         </span>
-        <span className="tnum text-[11px] text-mist/70">
+        <span className="tnum text-[11px] text-mist/70 sm:text-xs">
           {d === 0 ? "—" : `${d > 0 ? "+" : "−"}${fmt(Math.abs(d))}`}
         </span>
       </span>
       <span className="flex min-w-0 items-center gap-2">
-        <span className={cn("tnum w-12 shrink-0 text-left font-semibold", strong ? "font-display text-lg font-bold" : "text-[15px]", d < 0 && statTone(b))}>
+        <span className={cn("tnum w-12 shrink-0 text-left font-semibold sm:w-14", strong ? "font-display text-lg font-bold sm:text-xl" : "text-[15px] sm:text-lg", d < 0 && statTone(b))}>
           {fmt(b)}
         </span>
-        <span className="hidden h-1.5 flex-1 rounded-full bg-line sm:block" aria-hidden>
+        <span className="hidden h-1.5 max-w-44 flex-1 rounded-full bg-line sm:block" aria-hidden>
           <span className="block h-full rounded-full bg-holo" style={{ width: pct(b) }} />
         </span>
       </span>
