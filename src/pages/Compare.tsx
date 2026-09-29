@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
-import { OvrBadge, Panel, PentagonChart, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
+import { Panel, PentagonChart, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
 import { computeOvr, CATEGORIES, roleLabel } from "../engine/ovr";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
@@ -57,35 +57,26 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
             <PhotoCard idol={idolA} ovr={breakA.ovr} />
             <PhotoCard idol={idolB} ovr={breakB.ovr} />
           </div>
-          <Panel title="Overall rating" className="mt-4">
-            <div className="flex items-center justify-center gap-3">
-              <OvrBadge ovr={breakA.ovr} size="lg" />
-              <span className="tnum text-[13px] text-mist">vs</span>
-              <OvrBadge ovr={breakB.ovr} size="lg" />
+          <Panel title="Stats" className="mt-4">
+            <VersusRow label="Overall rating" a={breakA.ovr} b={breakB.ovr} strong />
+            <div className="mt-3 flex flex-col items-center border-t border-line pt-3">
+              <PentagonChart values={breakA.cats} valuesB={breakB.cats} size={160} />
+              <div className="mt-1 flex max-w-full items-center justify-center gap-4 text-[13px] text-mist">
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-punch" />
+                  <span className="truncate">{idolA.stageName}</span>
+                </span>
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-holo" />
+                  <span className="truncate">{idolB.stageName}</span>
+                </span>
+              </div>
             </div>
-            <div className="mt-3">
-              <VersusRow label="Overall rating" a={breakA.ovr} b={breakB.ovr} />
-            </div>
-          </Panel>
-          <Panel title="Attribute pentagon" className="mt-4">
-            <PentagonChart values={breakA.cats} valuesB={breakB.cats} />
-            <div className="mx-auto mt-2 flex max-w-full items-center justify-center gap-4 text-[13px] text-mist">
-              <span className="inline-flex min-w-0 items-center gap-1.5">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-punch" />
-                <span className="truncate">{idolA.stageName}</span>
-              </span>
-              <span className="inline-flex min-w-0 items-center gap-1.5">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-holo" />
-                <span className="truncate">{idolB.stageName}</span>
-              </span>
-            </div>
-          </Panel>
-          <Panel title="Attributes" className="mt-4">
-            <div className="space-y-5">
-              {CATEGORIES.map((c, gi) => (
-                <div key={c.key} className={gi > 0 ? "border-t border-line pt-4" : undefined}>
+            <div className="mt-3 space-y-4">
+              {CATEGORIES.map((c) => (
+                <div key={c.key} className="border-t border-line pt-3">
                   <VersusRow label={c.label} a={breakA.cats[c.key]} b={breakB.cats[c.key]} decimals={1} strong />
-                  <div className="mt-2.5 space-y-2.5">
+                  <div className="mt-2 space-y-2">
                     {c.subs.map((s) => (
                       <VersusRow
                         key={s.key}
@@ -97,16 +88,16 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
                   </div>
                 </div>
               ))}
-            </div>
-          </Panel>
-          <Panel title="Roles & popularity" className="mt-4">
-            <div className="space-y-2.5">
-              <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
-                <span className="truncate text-right font-medium">{roleLabel(idolA.roles[0] ?? "")}</span>
-                <span className="whitespace-nowrap px-1 text-[13px] text-mist">Primary role</span>
-                <span className="truncate text-left font-medium">{roleLabel(idolB.roles[0] ?? "")}</span>
+              <div className="border-t border-line pt-3">
+                <div className="grid min-h-10 grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
+                  <span className="truncate text-right font-medium">{roleLabel(idolA.roles[0] ?? "")}</span>
+                  <span className="whitespace-nowrap px-1 text-[13px] text-mist">Primary role</span>
+                  <span className="truncate text-left font-medium">{roleLabel(idolB.roles[0] ?? "")}</span>
+                </div>
+                <div className="mt-2">
+                  <VersusRow label="Popularity" a={idolA.popularity} b={idolB.popularity} />
+                </div>
               </div>
-              <VersusRow label="Popularity" a={idolA.popularity} b={idolB.popularity} />
             </div>
           </Panel>
         </>
@@ -119,8 +110,8 @@ function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: strin
   const d = a - b;
   const fmt = (v: number) => v.toFixed(decimals);
   return (
-    <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
-      <span className={cn("tnum text-right font-semibold", strong ? "font-display text-xl font-bold" : "text-[15px]", d > 0 && statTone(a))}>
+    <div className="grid min-h-10 grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
+      <span className={cn("tnum text-right font-semibold", strong ? "font-display text-lg font-bold" : "text-[15px]", d > 0 && statTone(a))}>
         {fmt(a)}
       </span>
       <span className="flex flex-col items-center px-1">
@@ -131,7 +122,7 @@ function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: strin
           {d === 0 ? "—" : `${d > 0 ? "+" : "−"}${fmt(Math.abs(d))}`}
         </span>
       </span>
-      <span className={cn("tnum text-left font-semibold", strong ? "font-display text-xl font-bold" : "text-[15px]", d < 0 && statTone(b))}>
+      <span className={cn("tnum text-left font-semibold", strong ? "font-display text-lg font-bold" : "text-[15px]", d < 0 && statTone(b))}>
         {fmt(b)}
       </span>
     </div>
