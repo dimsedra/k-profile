@@ -109,10 +109,17 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
 function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: string; a: number; b: number; decimals?: number; strong?: boolean }) {
   const d = a - b;
   const fmt = (v: number) => v.toFixed(decimals);
+  const pct = (v: number) =>
+    `${Math.max(2, Math.min(100, ((Math.round(v) - 40) / 59) * 100))}%`;
   return (
     <div className="grid min-h-10 grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
-      <span className={cn("tnum text-right font-semibold", strong ? "font-display text-lg font-bold" : "text-[15px]", d > 0 && statTone(a))}>
-        {fmt(a)}
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="hidden h-1.5 flex-1 rounded-full bg-line sm:block" aria-hidden>
+          <span className="ml-auto block h-full rounded-full bg-punch" style={{ width: pct(a) }} />
+        </span>
+        <span className={cn("tnum w-14 shrink-0 text-right font-semibold", strong ? "font-display text-lg font-bold" : "text-[15px]", d > 0 && statTone(a))}>
+          {fmt(a)}
+        </span>
       </span>
       <span className="flex flex-col items-center px-1">
         <span className={cn("whitespace-nowrap", strong ? "font-display text-[15px] font-bold" : "text-[13px] text-mist")}>
@@ -122,8 +129,13 @@ function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: strin
           {d === 0 ? "—" : `${d > 0 ? "+" : "−"}${fmt(Math.abs(d))}`}
         </span>
       </span>
-      <span className={cn("tnum text-left font-semibold", strong ? "font-display text-lg font-bold" : "text-[15px]", d < 0 && statTone(b))}>
-        {fmt(b)}
+      <span className="flex min-w-0 items-center gap-2">
+        <span className={cn("tnum w-14 shrink-0 text-left font-semibold", strong ? "font-display text-lg font-bold" : "text-[15px]", d < 0 && statTone(b))}>
+          {fmt(b)}
+        </span>
+        <span className="hidden h-1.5 flex-1 rounded-full bg-line sm:block" aria-hidden>
+          <span className="block h-full rounded-full bg-holo" style={{ width: pct(b) }} />
+        </span>
       </span>
     </div>
   );
