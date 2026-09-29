@@ -3,6 +3,7 @@ import { NavBar } from "./components/NavBar";
 import { useRoute } from "./router";
 import { StoreProvider, useStore } from "./store";
 import { Binder } from "./pages/Binder";
+import { Compare } from "./pages/Compare";
 import { Home } from "./pages/Home";
 import { IdolDetail } from "./pages/IdolDetail";
 import { IdolForm } from "./pages/IdolForm";
@@ -27,6 +28,7 @@ function Screen() {
         {route.name === "home" && <Home />}
         {route.name === "table" && <ScoutingTable />}
         {route.name === "binder" && <Binder />}
+        {route.name === "compare" && <Compare a={route.a} b={route.b} />}
         {route.name === "idol" && <IdolDetail id={Number(route.id)} />}
         {route.name === "group" && <GroupDetail id={Number(route.id)} />}
         {route.name === "add" && <IdolForm key="add" />}

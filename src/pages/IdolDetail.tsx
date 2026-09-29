@@ -140,6 +140,12 @@ export function IdolDetail({ id }: { id: number }) {
             </div>
             <OvrBadge ovr={breakdown.ovr} size="lg" className="shrink-0 shadow-sm" />
           </div>
+          <button
+            onClick={() => navigate(`/compare/${idol.id}/`)}
+            className="mt-4 w-full rounded-lg border border-line bg-paper px-3 py-2 text-[14px] font-semibold text-mist hover:text-ink"
+          >
+            Compare this idol
+          </button>
 
           {/* How the rating is built + attribute pentagon */}
           <div className="mt-6 grid gap-4 xl:grid-cols-[260px_1fr]">

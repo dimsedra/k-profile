@@ -8,6 +8,7 @@ const LINKS: { label: string; href: string; match: string[] }[] = [
   { label: "Home", href: "#/", match: ["home"] },
   { label: "Scouting Table", href: "#/table", match: ["table"] },
   { label: "Photocards", href: "#/binder", match: ["binder", "idol", "group"] },
+  { label: "Compare", href: "#/compare", match: ["compare"] },
 ];
 
 export function NavBar({ route }: { route: Route }) {

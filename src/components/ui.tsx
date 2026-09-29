@@ -90,9 +90,11 @@ const PENTA_SHORT: Record<CategoryKey, string> = {
 /** Radar pentagon of the 5 parent categories. Domain 40–100, same as StatBar. */
 export function PentagonChart({
   values,
+  valuesB,
   size = 220,
 }: {
   values: Record<CategoryKey, number>;
+  valuesB?: Record<CategoryKey, number>;
   size?: number;
 }) {
   const c = 110;
@@ -112,7 +114,7 @@ export function PentagonChart({
       height={size}
       role="img"
       aria-label="Attribute pentagon"
-      className="mx-auto block"
+      className="mx-auto block h-auto max-w-full"
     >
       {[40, 60, 80, 100].map((grid) => (
         <polygon
@@ -132,17 +134,27 @@ export function PentagonChart({
       <polygon
         points={points(PENTA_ORDER.map((k) => radiusOf(values[k])))}
         fill="var(--color-punch)"
-        fillOpacity="0.18"
+        fillOpacity="0.24"
         stroke="var(--color-punch)"
-        strokeWidth="2"
+        strokeWidth="3"
         strokeLinejoin="round"
       />
+      {valuesB && (
+        <polygon
+          points={points(PENTA_ORDER.map((k) => radiusOf(valuesB[k])))}
+          fill="var(--color-holo)"
+          fillOpacity="0.18"
+          stroke="var(--color-holo)"
+          strokeWidth="3"
+          strokeLinejoin="round"
+        />
+      )}
       {PENTA_ORDER.map((k, i) => {
         const [x, y] = polar(i, radiusOf(values[k]));
         const [lx, ly] = polar(i, R + 18);
         return (
           <g key={k}>
-            <circle cx={x} cy={y} r="3.5" fill="var(--color-punch)" />
+            <circle cx={x} cy={y} r="4.5" fill="var(--color-punch)" />
             <text
               x={lx}
               y={ly}
@@ -157,6 +169,11 @@ export function PentagonChart({
           </g>
         );
       })}
+      {valuesB &&
+        PENTA_ORDER.map((k, i) => {
+          const [x, y] = polar(i, radiusOf(valuesB[k]));
+          return <circle key={k} cx={x} cy={y} r="4.5" fill="var(--color-holo)" />;
+        })}
     </svg>
   );
 }
