@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
-import { Panel, Portrait, SearchInput } from "../components/ui";
+import { OvrBadge, Panel, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
+import { computeOvr } from "../engine/ovr";
 import { navigate } from "../router";
+import { cn } from "../utils/cn";
 import type { Idol } from "../engine/ovr";
 
 export function Compare({ a, b }: { a?: string; b?: string }) {
-  const { idols, ready } = useStore();
+  const { idols, config, ready } = useStore();
   const idolA = idols.find((i) => String(i.id) === a);
   const idolB = idols.find((i) => String(i.id) === b);
 
@@ -18,6 +20,9 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
   }
 
   const sameIds = !!a && !!b && a === b;
+  const showStats = !!idolA && !!idolB && !sameIds;
+  const breakA = idolA ? computeOvr(idolA, config) : null;
+  const breakB = idolB ? computeOvr(idolB, config) : null;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -46,9 +51,46 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
           Pick two different idols to compare.
         </p>
       )}
+      {showStats && idolA && idolB && breakA && breakB && (
+        <>
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            <PhotoCard idol={idolA} ovr={breakA.ovr} />
+            <PhotoCard idol={idolB} ovr={breakB.ovr} />
+          </div>
+          <Panel title="Overall rating" className="mt-4">
+            <div className="flex items-center justify-center gap-3">
+              <OvrBadge ovr={breakA.ovr} size="lg" />
+              <span className="tnum text-[13px] text-mist">vs</span>
+              <OvrBadge ovr={breakB.ovr} size="lg" />
+            </div>
+            <div className="mt-3">
+              <VersusRow label="Overall rating" a={breakA.ovr} b={breakB.ovr} />
+            </div>
+          </Panel>
+        </>
+      )}
       <Panel title="Comparison" className="mt-6">
         <p className="text-[14px] text-mist">Stats land here in Task 2.</p>
       </Panel>
+    </div>
+  );
+}
+
+function VersusRow({ label, a, b, decimals = 0 }: { label: string; a: number; b: number; decimals?: number }) {
+  const d = a - b;
+  const fmt = (v: number) => v.toFixed(decimals);
+  return (
+    <div className="flex items-center gap-2 text-[14px]">
+      <span className="min-w-0 flex-1 truncate text-mist">{label}</span>
+      <span className={cn("tnum w-14 shrink-0 text-right font-semibold", d > 0 && statTone(a))}>
+        {fmt(a)}
+      </span>
+      <span className="tnum w-14 shrink-0 text-center text-[13px] text-mist">
+        {d === 0 ? "—" : `${d > 0 ? "+" : "−"}${fmt(Math.abs(d))}`}
+      </span>
+      <span className={cn("tnum w-14 shrink-0 text-right font-semibold", d < 0 && statTone(b))}>
+        {fmt(b)}
+      </span>
     </div>
   );
 }
