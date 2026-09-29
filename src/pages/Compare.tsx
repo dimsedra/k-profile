@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
-import { OvrBadge, Panel, PentagonChart, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
+import { Panel, PentagonChart, PhotoCard, Portrait, SearchInput, statTone } from "../components/ui";
 import { computeOvr, CATEGORIES, roleLabel } from "../engine/ovr";
 import { navigate } from "../router";
 import { cn } from "../utils/cn";
@@ -76,10 +76,8 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
                 </span>
                 <span className="mt-2 block truncate text-[14px] text-mist">{subA}</span>
               </span>
-              <OvrBadge ovr={breakA.ovr} size="lg" className="shrink-0" />
             </div>
-            <div className="flex min-w-0 items-center gap-4">
-              <OvrBadge ovr={breakB.ovr} size="lg" className="shrink-0" />
+            <div className="flex min-w-0 items-center justify-end gap-4">
               <span className="min-w-0 flex-1 text-right">
                 <span className="block truncate font-display text-3xl font-extrabold leading-none lg:text-4xl">
                   {idolB.stageName}
