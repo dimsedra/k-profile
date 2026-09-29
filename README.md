@@ -39,7 +39,8 @@ The catalog is public-read, admin-write. No users exist by default:
    set raw_app_meta_data = raw_app_meta_data || '{"is_admin": true}'::jsonb
    where email = 'you@example.com';
    ```
-3. Sign in at `#/login` (sign out + back in after granting the flag).
+3. Sign in at `#/login` (sign out + back in after granting the flag —
+   JWTs only pick up `app_metadata` on fresh sign-in).
 
 Never put `service_role` / secret keys in frontend env vars — publishable key only.
 
