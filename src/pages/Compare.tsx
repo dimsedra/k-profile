@@ -80,34 +80,31 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
               </span>
             </div>
           </Panel>
-          <Panel title="Categories" className="mt-4">
-            <div className="space-y-2.5">
-              {CATEGORIES.map((c) => (
-                <VersusRow key={c.key} label={c.label} a={breakA.cats[c.key]} b={breakB.cats[c.key]} decimals={1} />
+          <Panel title="Attributes" className="mt-4">
+            <div className="space-y-5">
+              {CATEGORIES.map((c, gi) => (
+                <div key={c.key} className={gi > 0 ? "border-t border-line pt-4" : undefined}>
+                  <VersusRow label={c.label} a={breakA.cats[c.key]} b={breakB.cats[c.key]} decimals={1} strong />
+                  <div className="mt-2.5 space-y-2.5">
+                    {c.subs.map((s) => (
+                      <VersusRow
+                        key={s.key}
+                        label={s.label}
+                        a={idolA.attrs[s.key] ?? 50}
+                        b={idolB.attrs[s.key] ?? 50}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </Panel>
-          {CATEGORIES.map((c) => (
-            <Panel key={c.key} title={c.label} className="mt-4">
-              <div className="space-y-2.5">
-                {c.subs.map((s) => (
-                  <VersusRow
-                    key={s.key}
-                    label={s.label}
-                    a={idolA.attrs[s.key] ?? 50}
-                    b={idolB.attrs[s.key] ?? 50}
-                  />
-                ))}
-              </div>
-            </Panel>
-          ))}
           <Panel title="Roles & popularity" className="mt-4">
             <div className="space-y-2.5">
-              <div className="flex items-center gap-2 text-[14px]">
-                <span className="min-w-0 flex-1 truncate text-mist">Primary role</span>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
                 <span className="truncate text-right font-medium">{roleLabel(idolA.roles[0] ?? "")}</span>
-                <span className="shrink-0 text-mist">/</span>
-                <span className="truncate text-right font-medium">{roleLabel(idolB.roles[0] ?? "")}</span>
+                <span className="whitespace-nowrap px-1 text-[13px] text-mist">Primary role</span>
+                <span className="truncate text-left font-medium">{roleLabel(idolB.roles[0] ?? "")}</span>
               </div>
               <VersusRow label="Popularity" a={idolA.popularity} b={idolB.popularity} />
             </div>
@@ -118,19 +115,23 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
   );
 }
 
-function VersusRow({ label, a, b, decimals = 0 }: { label: string; a: number; b: number; decimals?: number }) {
+function VersusRow({ label, a, b, decimals = 0, strong = false }: { label: string; a: number; b: number; decimals?: number; strong?: boolean }) {
   const d = a - b;
   const fmt = (v: number) => v.toFixed(decimals);
   return (
-    <div className="flex items-center gap-2 text-[14px]">
-      <span className="min-w-0 flex-1 truncate text-mist">{label}</span>
-      <span className={cn("tnum w-14 shrink-0 text-right font-semibold", d > 0 && statTone(a))}>
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[14px]">
+      <span className={cn("tnum text-right font-semibold", strong ? "font-display text-xl font-bold" : "text-[15px]", d > 0 && statTone(a))}>
         {fmt(a)}
       </span>
-      <span className="tnum w-14 shrink-0 text-center text-[13px] text-mist">
-        {d === 0 ? "—" : `${d > 0 ? "+" : "−"}${fmt(Math.abs(d))}`}
+      <span className="flex flex-col items-center px-1">
+        <span className={cn("whitespace-nowrap", strong ? "font-display text-[15px] font-bold" : "text-[13px] text-mist")}>
+          {label}
+        </span>
+        <span className="tnum text-[11px] text-mist/70">
+          {d === 0 ? "—" : `${d > 0 ? "+" : "−"}${fmt(Math.abs(d))}`}
+        </span>
       </span>
-      <span className={cn("tnum w-14 shrink-0 text-right font-semibold", d < 0 && statTone(b))}>
+      <span className={cn("tnum text-left font-semibold", strong ? "font-display text-xl font-bold" : "text-[15px]", d < 0 && statTone(b))}>
         {fmt(b)}
       </span>
     </div>
