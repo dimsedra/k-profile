@@ -114,9 +114,6 @@ export function Compare({ a, b }: { a?: string; b?: string }) {
           </Panel>
         </>
       )}
-      <Panel title="Comparison" className="mt-6">
-        <p className="text-[14px] text-mist">Stats land here in Task 2.</p>
-      </Panel>
     </div>
   );
 }
