@@ -227,6 +227,8 @@ export function roleScore(cats: Record<CategoryKey, number>, roleId: string, cfg
 
 export interface OvrBreakdown {
   cats: Record<CategoryKey, number>;
+  /** Midrange cutoff (max + min) / 2 across 11 functional roles */
+  threshold: number;
   /** ranked best-first with the normalized decay weight actually applied */
   roleScores: { roleId: string; score: number; weight: number }[];
   base: number;
@@ -234,35 +236,49 @@ export interface OvrBreakdown {
   ovr: number;
 }
 
-/** Full three-tier calculation (display-only tags excluded from Tier 2) */
+/** Full three-tier calculation based on natural archetype discovery */
 export function computeOvr(idol: Idol, cfg: EngineConfig): OvrBreakdown {
+  if (!Number.isFinite(cfg.roleDecay) || cfg.roleDecay <= 0) {
+    throw new Error("Invalid roleDecay in EngineConfig");
+  }
+
   const cats = categoryScores(idol, cfg);
 
-  // Tier 2 — Ranked Role Decay
-  const scored = idol.roles
-    .filter((roleId) => !NON_SCORING_ROLES.includes(roleId) && !!cfg.roleMatrix[roleId])
-    .map((roleId) => ({ roleId, score: roleScore(cats, roleId, cfg) }))
-    .sort((a, b) => b.score - a.score);
+  // Tier 2 — Evaluate all 11 functional roles
+  const allScored = SCORING_ROLES.map((r) => ({
+    id: r.id,
+    family: r.family,
+    score: roleScore(cats, r.id, cfg),
+  })).sort((a, b) => b.score - a.score);
 
-  let base: number;
-  let roleScores: OvrBreakdown["roleScores"];
-  if (scored.length === 0) {
-    base =
-      (Object.values(cats) as number[]).reduce((s, v) => s + v, 0) /
-      CATEGORIES.length;
-    roleScores = [];
-  } else {
-    const raw = scored.map((_, i) => Math.pow(cfg.roleDecay, i));
-    const total = raw.reduce((s, w) => s + w, 0);
-    roleScores = scored.map((r, i) => ({ ...r, weight: raw[i] / total }));
-    base = roleScores.reduce((s, r) => s + r.score * r.weight, 0);
+  const max = allScored[0].score;
+  const min = allScored[allScored.length - 1].score;
+  const threshold = (max + min) / 2;
+
+  // Single-pass filter: score >= threshold AND unique per family
+  const seenFamilies = new Set<RoleFamily>();
+  const qualified: { id: string; score: number }[] = [];
+  for (const item of allScored) {
+    if (item.score >= threshold && !seenFamilies.has(item.family)) {
+      seenFamilies.add(item.family);
+      qualified.push({ id: item.id, score: item.score });
+    }
   }
+
+  const raw = qualified.map((_, i) => Math.pow(cfg.roleDecay, i));
+  const totalWeight = raw.reduce((s, w) => s + w, 0);
+  const roleScores = qualified.map((r, i) => ({
+    roleId: r.id,
+    score: r.score,
+    weight: raw[i] / totalWeight,
+  }));
+  const base = roleScores.reduce((s, r) => s + r.score * r.weight, 0);
 
   // Tier 3 — Popularity Drift
   const drift = ((idol.popularity - 50) / 50) * cfg.driftMax;
   const ovr = Math.max(40, Math.min(99, Math.round(base + drift)));
 
-  return { cats, roleScores, base, drift, ovr };
+  return { cats, threshold, roleScores, base, drift, ovr };
 }
 
 export const ovrOf = (idol: Idol, cfg: EngineConfig) => computeOvr(idol, cfg).ovr;
