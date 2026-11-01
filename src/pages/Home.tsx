@@ -110,7 +110,7 @@ export function Home() {
             href={`#/idol/${top.idol.id}`}
             portrait={<Portrait idol={top.idol} className="h-full w-full" />}
             name={top.idol.stageName}
-            sub={`${top.idol.group} — ${roleLabel(top.idol.roles[0] ?? "allRounder")}`}
+            sub={`${top.idol.group} — ${roleLabel(top.idol.roles[0] ?? "")}`}
             metric={<OvrBadge ovr={top.ovr} size="md" />}
           />
           {topGroup && (
@@ -136,7 +136,7 @@ export function Home() {
             href={`#/idol/${popular.idol.id}`}
             portrait={<Portrait idol={popular.idol} className="h-full w-full" />}
             name={popular.idol.stageName}
-            sub={`${popular.idol.group} — ${roleLabel(popular.idol.roles[0] ?? "allRounder")}`}
+            sub={`${popular.idol.group} — ${roleLabel(popular.idol.roles[0] ?? "")}`}
             metric={
               <span className={cn("font-display tnum text-xl font-bold", statTone(popular.idol.popularity))}>
                 {popular.idol.popularity}

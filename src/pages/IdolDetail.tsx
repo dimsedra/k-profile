@@ -189,9 +189,9 @@ export function IdolDetail({ id }: { id: number }) {
               </span>
             </div>
             <p className="mt-3 text-[12px] leading-relaxed text-mist">
-              Think of roles as lenses, not certificates. This panel shows how
-              well the idol's stats fit each tagged role — the best fit leads,
-              the rest refine.
+              Think of roles as lenses, not certificates. Natural archetypes are discovered
+              from attributes using a midrange cutoff ({breakdown.threshold.toFixed(1)}) — the
+              best fit leads, the rest refine.
             </p>
           </Panel>
           </div>

@@ -31,7 +31,7 @@ const blank = (): Idol => ({
   agency: "",
   bio: "",
   photo: undefined,
-  roles: ["allRounder"],
+  roles: ["mainVocal"],
   attrs: blankAttrs(),
   popularity: 50,
   customFields: [],
@@ -372,7 +372,7 @@ export function IdolForm({ editId }: { editId?: number }) {
           >
             {draft.roles.length === 0 ? (
               <p className="text-[14px] text-mist">
-                No roles yet. Add at least one — it anchors the rating.
+                No roles yet. Add at least one for the group profile.
               </p>
             ) : (
               <ul className="space-y-2">
@@ -390,8 +390,8 @@ export function IdolForm({ editId }: { editId?: number }) {
               </ul>
             )}
             <p className="mt-3 text-[12px] text-mist">
-              Rank is a statement of intent — the engine still re-ranks by measured
-              scores, so ordering can't inflate the rating.
+              Assigned group roles reflect official assignments. OVR is computed automatically
+              from natural archetype ability.
             </p>
           </Panel>
 

@@ -13,6 +13,7 @@ import {
   CATEGORIES,
   DEFAULT_CONFIG,
   ROLES,
+  SCORING_ROLES,
   computeOvr,
   type CategoryKey,
   type EngineConfig,
@@ -132,7 +133,7 @@ function sanitizeEngine(eng: EngineRow): EngineConfig {
     }
   }
   const roleMatrix = { ...DEFAULT_CONFIG.roleMatrix };
-  for (const r of ROLES) {
+  for (const r of SCORING_ROLES) {
     const row = (eng.role_matrix as Record<string, unknown> | null)?.[r.id];
     if (
       row !== null &&
@@ -188,7 +189,7 @@ function toIdol(
         : undefined,
     photoPath: row.photo_path ?? undefined,
     photoKind: row.photo_kind as Idol["photoKind"],
-    roles: roles.map((r) => r.role_id),
+    roles: roles.map((r) => r.role_id).filter((id) => ROLES.some((r) => r.id === id)),
     attrs: attrMap,
     popularity: Number(row.popularity),
     customFields: defs.map((d) => ({
