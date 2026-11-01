@@ -2,7 +2,7 @@
 title: "Blueprint: Natural Multi-Role Archetype OVR Engine"
 type: blueprint
 parent_intent: docs/intent/20261102_natural_archetype_ovr.md
-status: Draft
+status: Approved
 last_updated: 2026-11-02
 ---
 

@@ -78,26 +78,45 @@ export const CATEGORIES: CategoryDef[] = [
 
 export const ALL_SUB_KEYS = CATEGORIES.flatMap((c) => c.subs.map((s) => s.key));
 
+export type RoleFamily = "vocal" | "rap" | "dance" | "visual" | "center";
+
+export type ScoringRoleId =
+  | "mainVocal"
+  | "leadVocal"
+  | "subVocalist"
+  | "mainRapper"
+  | "leadRapper"
+  | "subRapper"
+  | "mainDancer"
+  | "leadDancer"
+  | "subDancer"
+  | "visual"
+  | "center";
+
 export interface RoleDef {
   id: string;
   label: string;
+  family: RoleFamily | null;
 }
 
 export const ROLES: RoleDef[] = [
-  { id: "mainVocal", label: "Main Vocalist" },
-  { id: "leadVocal", label: "Lead Vocalist" },
-  { id: "subVocalist", label: "Sub Vocalist" },
-  { id: "mainRapper", label: "Main Rapper" },
-  { id: "leadRapper", label: "Lead Rapper" },
-  { id: "subRapper", label: "Sub Rapper" },
-  { id: "mainDancer", label: "Main Dancer" },
-  { id: "leadDancer", label: "Lead Dancer" },
-  { id: "subDancer", label: "Sub Dancer" },
-  { id: "visual", label: "Visual" },
-  { id: "center", label: "Center" },
-  { id: "leader", label: "Leader" },
-  { id: "allRounder", label: "All-Rounder" },
+  { id: "mainVocal", label: "Main Vocalist", family: "vocal" },
+  { id: "leadVocal", label: "Lead Vocalist", family: "vocal" },
+  { id: "subVocalist", label: "Sub Vocalist", family: "vocal" },
+  { id: "mainRapper", label: "Main Rapper", family: "rap" },
+  { id: "leadRapper", label: "Lead Rapper", family: "rap" },
+  { id: "subRapper", label: "Sub Rapper", family: "rap" },
+  { id: "mainDancer", label: "Main Dancer", family: "dance" },
+  { id: "leadDancer", label: "Lead Dancer", family: "dance" },
+  { id: "subDancer", label: "Sub Dancer", family: "dance" },
+  { id: "visual", label: "Visual", family: "visual" },
+  { id: "center", label: "Center", family: "center" },
+  { id: "leader", label: "Leader", family: null },
 ];
+
+export const SCORING_ROLES = ROLES.filter(
+  (r): r is RoleDef & { id: ScoringRoleId; family: RoleFamily } => r.family !== null
+);
 
 /**
  * Tags that never enter the rating math. Leadership is not a skill
@@ -169,7 +188,6 @@ export const DEFAULT_CONFIG: EngineConfig = {
     visual: { vocal: 10, rap: 5, dance: 10, stage: 25, visual: 50 },
     center: { vocal: 10, rap: 5, dance: 20, stage: 35, visual: 30 },
     leader: { vocal: 20, rap: 10, dance: 20, stage: 30, visual: 20 },
-    allRounder: { vocal: 20, rap: 20, dance: 20, stage: 20, visual: 20 },
   },
   roleDecay: 0.5,
   driftMax: 2,
@@ -198,7 +216,10 @@ export function categoryScores(idol: Idol, cfg: EngineConfig): Record<CategoryKe
 
 /** How well one role archetype fits this idol's category profile */
 export function roleScore(cats: Record<CategoryKey, number>, roleId: string, cfg: EngineConfig): number {
-  const row = cfg.roleMatrix[roleId] ?? cfg.roleMatrix.allRounder;
+  const row = cfg.roleMatrix[roleId];
+  if (!row) {
+    throw new Error(`Unknown or degenerate role in roleMatrix: ${roleId}`);
+  }
   return weightedMean(
     (Object.keys(row) as CategoryKey[]).map((k) => [cats[k], row[k]])
   );
@@ -219,7 +240,7 @@ export function computeOvr(idol: Idol, cfg: EngineConfig): OvrBreakdown {
 
   // Tier 2 — Ranked Role Decay
   const scored = idol.roles
-    .filter((roleId) => !NON_SCORING_ROLES.includes(roleId))
+    .filter((roleId) => !NON_SCORING_ROLES.includes(roleId) && !!cfg.roleMatrix[roleId])
     .map((roleId) => ({ roleId, score: roleScore(cats, roleId, cfg) }))
     .sort((a, b) => b.score - a.score);
 
