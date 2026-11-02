@@ -152,48 +152,49 @@ export function IdolDetail({ id }: { id: number }) {
             <Panel>
               <PentagonChart values={breakdown.cats} />
             </Panel>
-            <Panel title="How this rating is built">
-            <div className="space-y-3">
-              {breakdown.roleScores.map((r) => (
-                <div key={r.roleId} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[14px]">
-                  <span className="order-1 w-28 shrink-0 truncate font-medium sm:w-36">{roleLabel(r.roleId)}</span>
-                  <span className={cn("tnum order-2 ml-auto w-10 text-right font-semibold sm:ml-0", statTone(r.score))}>
-                    {r.score.toFixed(1)}
-                  </span>
-                  <span className="tnum order-3 w-14 text-right text-[13px] text-mist">
-                    × {(r.weight * 100).toFixed(0)}%
-                  </span>
-                  <div className="order-4 h-1 basis-full rounded-full bg-line sm:order-2 sm:basis-auto sm:flex-1">
-                    <div
-                      className="h-full rounded-full bg-holo"
-                      style={{ width: `${((r.score - 40) / 59) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 border-t border-line pt-3 text-[14px]">
-              <span>
-                Role-weighted base{" "}
-                <strong className={cn("tnum", statTone(breakdown.base))}>{breakdown.base.toFixed(1)}</strong>
-              </span>
-              <span>
-                Popularity drift{" "}
-                <strong className="tnum">
-                  {breakdown.drift >= 0 ? "+" : ""}
-                  {breakdown.drift.toFixed(1)}
-                </strong>
-              </span>
-              <span>
-                Overall <strong className="tnum">{breakdown.ovr}</strong>
-              </span>
-            </div>
-            <p className="mt-3 text-[12px] leading-relaxed text-mist">
-              Think of roles as lenses, not certificates. Natural archetypes are discovered
-              from attributes using a midrange cutoff ({breakdown.threshold.toFixed(1)}) — the
-              best fit leads, the rest refine.
-            </p>
-          </Panel>
+            <Panel title="Archetype trait">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-3">
+                <span className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl text-ink">
+                  {breakdown.archetype.title}
+                </span>
+                <span className="text-[12px] font-semibold text-mist uppercase tracking-wider">
+                  {breakdown.archetype.activeCategories.length} of 5 pillars
+                </span>
+              </div>
+              <p className="mt-3 text-[14px] leading-relaxed text-mist">
+                {breakdown.archetype.description}
+              </p>
+
+              <div className="mt-4 space-y-2.5">
+                {breakdown.archetype.activeCategories.map((catKey) => {
+                  const catDef = CATEGORIES.find((c) => c.key === catKey);
+                  const label = catDef?.label ?? catKey;
+                  const score = breakdown.cats[catKey];
+                  return (
+                    <div key={catKey} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px]">
+                      <span className="order-1 w-28 shrink-0 truncate font-medium sm:w-36">{label}</span>
+                      <span className={cn("tnum order-2 ml-auto w-10 text-right font-semibold sm:ml-0", statTone(score))}>
+                        {score.toFixed(1)}
+                      </span>
+                      <div className="order-4 h-1.5 basis-full rounded-full bg-line sm:order-2 sm:basis-auto sm:flex-1">
+                        <div
+                          className="h-full rounded-full bg-punch"
+                          style={{ width: `${Math.max(2, Math.min(100, ((score - 40) / 59) * 100))}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 border-t border-line pt-3">
+                <p className="text-[12px] leading-relaxed text-mist">
+                  Active traits meet or exceed the category midpoint threshold (
+                  <strong className="tnum font-semibold text-ink">{breakdown.archetype.threshold.toFixed(1)}</strong>
+                  ) across all 5 intrinsic skill dimensions.
+                </p>
+              </div>
+            </Panel>
           </div>
 
           {/* Categories + atomic breakdown */}
