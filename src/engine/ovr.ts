@@ -240,45 +240,138 @@ export interface ArchetypeResult {
 
 export const ARCHETYPES: Record<string, ArchetypeDef> = {
   // Lapisan 1: Spesialis Murni (1 Sumbu Aktif — 5 Tipe)
-  "vocal": { title: "The Vocal Maestro", description: "Penguasa teknik suara murni" },
-  "rap": { title: "The Wordsmith", description: "Penenun rima, tempo, dan lirik" },
-  "dance": { title: "The Dance Dynamo", description: "Penari murni berenergi kinetik tinggi" },
-  "stage": { title: "The Stage Commander", description: "Pengendali formasi dan pusat gravitasi panggung" },
-  "visual": { title: "The Visual Muse", description: "Inspirasi estetika visual dan pesona kamera" },
+  "vocal": {
+    title: "The Vocal Maestro",
+    description: "Master of vocal technique and tonal expression, anchoring the group's sonic identity.",
+  },
+  "rap": {
+    title: "The Wordsmith",
+    description: "Rhythm and flow architect, delivering intricate cadences and razor-sharp lyricism.",
+  },
+  "dance": {
+    title: "The Dance Dynamo",
+    description: "Kinetic powerhouse with exceptional precision, athleticism, and choreographic execution.",
+  },
+  "stage": {
+    title: "The Stage Commander",
+    description: "Natural live authority commanding audience focus, group formations, and stage gravity.",
+  },
+  "visual": {
+    title: "The Visual Muse",
+    description: "Striking aesthetic presence and camera magnetism, embodying the visual concept of the group.",
+  },
 
   // Lapisan 2: Dua Keahlian / Dual Focus (2 Sumbu Aktif — 10 Tipe)
-  "vocal+rap": { title: "The Melodic Rapper", description: "Keahlian berimbang antara menyanyi merdu dan melantunkan rap" },
-  "vocal+dance": { title: "The Stage Engine", description: "Motor penggerak penampilan langsung yang stabil" },
-  "vocal+stage": { title: "The Vocal Anchor", description: "Pondasi suara utama dengan karisma panggung dominan" },
-  "vocal+visual": { title: "The Visual Siren", description: "Penyanyi dengan daya pikat vokal dan visual menawan" },
-  "rap+dance": { title: "The Rhythm Striker", description: "Penyerang ritme cepat lewat tarian tajam dan rap" },
-  "rap+stage": { title: "The Stage Disruptor", description: "Rapper yang mendominasi dan menggebrak suasana panggung" },
-  "rap+visual": { title: "The Trendsetter", description: "Rapper berpenampilan khas yang memimpin gaya dan tren grup" },
-  "dance+stage": { title: "The Pacesetter", description: "Penari berenergi tinggi yang mengatur tempo panggung seluruh grup" },
-  "dance+visual": { title: "The Graceful Performer", description: "Penari dengan ekspresi panggung dan estetika gerak yang memikat" },
-  "stage+visual": { title: "The Centerpiece", description: "Pusat perhatian visual dan karisma yang menjadi representasi panggung" },
+  "vocal+rap": {
+    title: "The Melodic Rapper",
+    description: "Seamlessly blends melodic vocal delivery with fast, articulate rap verses.",
+  },
+  "vocal+dance": {
+    title: "The Stage Engine",
+    description: "High-stamina live motor executing demanding choreography while preserving vocal stability.",
+  },
+  "vocal+stage": {
+    title: "The Vocal Anchor",
+    description: "Commanding live vocalist who electrifies the stage with undeniable vocal charisma.",
+  },
+  "vocal+visual": {
+    title: "The Visual Siren",
+    description: "Enchanting vocal presence paired with irresistible camera charisma and visual elegance.",
+  },
+  "rap+dance": {
+    title: "The Rhythm Striker",
+    description: "Explosive performer driving high-tempo tracks through aggressive rap flows and sharp dance moves.",
+  },
+  "rap+stage": {
+    title: "The Stage Disruptor",
+    description: "Bold, unpredictable presence bringing ferocious energy and commanding the stage through rap.",
+  },
+  "rap+visual": {
+    title: "The Trendsetter",
+    description: "Distinctive stylist with sharp rap cadence, defining the visual and musical edge of the group.",
+  },
+  "dance+stage": {
+    title: "The Pacesetter",
+    description: "Charismatic lead dancer setting the choreographic standard and driving live energy.",
+  },
+  "dance+visual": {
+    title: "The Graceful Performer",
+    description: "Mesmerizing dancer pairing fluid lines and precision with striking camera presence.",
+  },
+  "stage+visual": {
+    title: "The Centerpiece",
+    description: "Magnetic live presence that naturally draws every eye and anchors the stage aesthetic.",
+  },
 
   // Lapisan 3: Tiga Keahlian / Triple Threat (3 Sumbu Aktif — 10 Tipe)
-  "vocal+rap+dance": { title: "The Powerhouse", description: "Segitiga kemampuan teknis musikal dan koreografi murni" },
-  "vocal+rap+stage": { title: "The Frontline Virtuoso", description: "Musisi panggung lengkap di garis depan" },
-  "vocal+rap+visual": { title: "The Melodic Icon", description: "Musisi vokal-rap dengan representasi citra visual kuat" },
-  "vocal+dance+stage": { title: "The Showstopper", description: "Pencuri perhatian utama panggung lewat lagu, koreo, dan aksi panggung" },
-  "vocal+dance+visual": { title: "The Radiant Showman", description: "Paket penampil klasik dengan vokal prima, tari, dan visual" },
-  "vocal+stage+visual": { title: "The Headliner", description: "Nama utama yang memimpin sorotan lewat suara, aura visual, dan karisma" },
-  "rap+dance+stage": { title: "The Crowd Igniter", description: "Pemicu antusiasme penonton lewat rap, koreo agresif, dan kontrol panggung" },
-  "rap+dance+visual": { title: "The Stage Maverick", description: "Penampil berkarakter bebas dengan rap, koreo tajam, dan gaya khas" },
-  "rap+stage+visual": { title: "The Frontman", description: "Juru bicara dan wajah utama panggung bergenre ritmis" },
-  "dance+stage+visual": { title: "The Stage Sensation", description: "Koreografi, karisma, dan visual spektakuler di panggung" },
+  "vocal+rap+dance": {
+    title: "The Powerhouse",
+    description: "Musical and physical triple threat executing complex vocals, verses, and choreography.",
+  },
+  "vocal+rap+stage": {
+    title: "The Frontline Virtuoso",
+    description: "Complete musical frontliner dominating live performances through vocal, rap, and stage control.",
+  },
+  "vocal+rap+visual": {
+    title: "The Melodic Icon",
+    description: "Versatile vocal-rap artist with standout visual appeal and undeniable star aura.",
+  },
+  "vocal+dance+stage": {
+    title: "The Showstopper",
+    description: "Electric live performer stealing the spotlight with powerhouse vocals and stage mastery.",
+  },
+  "vocal+dance+visual": {
+    title: "The Radiant Showman",
+    description: "Classic all-around idol packaging polished vocals, graceful dance, and luminous visual appeal.",
+  },
+  "vocal+stage+visual": {
+    title: "The Headliner",
+    description: "Marquee artist captivating crowds with soaring vocals, stage charisma, and camera presence.",
+  },
+  "rap+dance+stage": {
+    title: "The Crowd Igniter",
+    description: "Fierce rhythm specialist firing up audiences with blistering flows, hard-hitting moves, and wild energy.",
+  },
+  "rap+dance+visual": {
+    title: "The Stage Maverick",
+    description: "Free-spirited performer combining street dance, rhythmic rap delivery, and striking visual attitude.",
+  },
+  "rap+stage+visual": {
+    title: "The Frontman",
+    description: "Charismatic spokesperson and visual center driving the group's sonic and visual identity.",
+  },
+  "dance+stage+visual": {
+    title: "The Stage Sensation",
+    description: "Visual and choreographic spectacle commanding center stage with dramatic flair.",
+  },
 
   // Lapisan 4: Empat Keahlian / Quad Focus (4 Sumbu Aktif — 5 Tipe)
-  "vocal+rap+dance+visual": { title: "The Technical Prodigy", description: "Berbakat luar biasa di empat lini teknis dan visual tanpa dominasi kontrol panggung" },
-  "vocal+rap+dance+stage": { title: "The Stage Vanguard", description: "Garda terdepan performa panggung dengan kemampuan teknis dan karisma mutlak" },
-  "vocal+rap+stage+visual": { title: "The Luminary", description: "Tokoh panggung yang bersinar lewat suara, lirik, visual, dan karisma" },
-  "vocal+dance+stage+visual": { title: "The Protagonist", description: "Sosok sentral ala tokoh utama idol: vokal, tari, aura panggung, dan visual" },
-  "rap+dance+stage+visual": { title: "The Trailblazer", description: "Pembuka jalan panggung berenergi ritmis, koreo tajam, dan pesona visual" },
+  "vocal+rap+dance+visual": {
+    title: "The Technical Prodigy",
+    description: "Gifted all-around talent mastering vocals, rap, dance, and visuals across every performance.",
+  },
+  "vocal+rap+dance+stage": {
+    title: "The Stage Vanguard",
+    description: "Formidable performance leader possessing complete technical command over music, dance, and stagecraft.",
+  },
+  "vocal+rap+stage+visual": {
+    title: "The Luminary",
+    description: "Radiant artist shining through expressive vocals, rap verses, visual aura, and stage poise.",
+  },
+  "vocal+dance+stage+visual": {
+    title: "The Protagonist",
+    description: "The quintessential center idol commanding vocal lines, choreography, stage aura, and visual magnetism.",
+  },
+  "rap+dance+stage+visual": {
+    title: "The Trailblazer",
+    description: "Dynamic pioneer spearheading intense performances with rap precision, dance energy, and visual star power.",
+  },
 
   // Lapisan 5: Sempurna / All Pillars (5 Sumbu Aktif — 1 Tipe)
-  "vocal+rap+dance+stage+visual": { title: "The All-Rounder", description: "Penguasa seluruh lima dimensi atribut kemampuan idol" },
+  "vocal+rap+dance+stage+visual": {
+    title: "The All-Rounder",
+    description: "Unrivaled master excelling across every single pillar of idol craft.",
+  },
 };
 
 /** Compute 5-axis midrange archetype trait from parent category scores */

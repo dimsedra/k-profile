@@ -44,8 +44,8 @@ Alur eksekusi bekerja sebagai berikut:
 - Input: `breakdown = computeOvr(idol, config)` di [src/pages/IdolDetail.tsx](file:///home/eds/Code/k-profile/src/pages/IdolDetail.tsx#L14-L17).
 - Behavior:
   1. Mengganti `<Panel title="How this rating is built">` ([src/pages/IdolDetail.tsx](file:///home/eds/Code/k-profile/src/pages/IdolDetail.tsx#L155-L196)) beserta seluruh tampilan `breakdown.roleScores`, `Role-weighted base`, `Popularity drift`, dan catatan kaki lamanya menjadi `<Panel title="Archetype trait">`.
-  2. Menampilkan gelar arketipe (`breakdown.archetype.title`) dan deskripsi persona panggungnya (`breakdown.archetype.description`).
-  3. Menampilkan daftar kategori atribut yang aktif (`breakdown.archetype.activeCategories`) beserta bar visual dan nilai angkanya (`breakdown.cats[key]`), serta ringkasan batas titik tengah kategori (`breakdown.archetype.threshold.toFixed(1)`) dan jumlah pilar aktif (`${breakdown.archetype.activeCategories.length} of 5 pillars`).
+  2. Menampilkan gelar arketipe (`breakdown.archetype.title`) dan deskripsi persona panggungnya dalam bahasa Inggris (`breakdown.archetype.description`).
+  3. Menampilkan daftar kategori atribut yang aktif (`breakdown.archetype.activeCategories`) sebagai chips/badges murni beserta label pilar (`${breakdown.archetype.activeCategories.length} of 5 pillars`), tanpa progress bar statistik, nilai angka stat, maupun catatan kaki rumus matematika.
 - Output: Panel Archetype Trait yang ter-render menggantikan panel lama di sebelah kanan `PentagonChart` pada halaman detail idol.
 - Failure: Bila data `idol` tidak ditemukan, komponen tetap berhenti di guard clause awal `IdolDetail` ([src/pages/IdolDetail.tsx](file:///home/eds/Code/k-profile/src/pages/IdolDetail.tsx#L27-L39)).
 - Verification: Pemeriksaan tipe statis (`npx tsc --noEmit`), build produksi (`npm run build`), dan verifikasi visual antarmuka pada tahap implementasi (`/design` dan `/proof`).
