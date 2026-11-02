@@ -161,38 +161,21 @@ export function IdolDetail({ id }: { id: number }) {
                   {breakdown.archetype.activeCategories.length} of 5 pillars
                 </span>
               </div>
-              <p className="mt-3 text-[14px] leading-relaxed text-mist">
+              <p className="mt-3 text-[15px] leading-relaxed text-mist">
                 {breakdown.archetype.description}
               </p>
-
-              <div className="mt-4 space-y-2.5">
+              <div className="mt-5 flex flex-wrap gap-2">
                 {breakdown.archetype.activeCategories.map((catKey) => {
                   const catDef = CATEGORIES.find((c) => c.key === catKey);
-                  const label = catDef?.label ?? catKey;
-                  const score = breakdown.cats[catKey];
                   return (
-                    <div key={catKey} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px]">
-                      <span className="order-1 w-28 shrink-0 truncate font-medium sm:w-36">{label}</span>
-                      <span className={cn("tnum order-2 ml-auto w-10 text-right font-semibold sm:ml-0", statTone(score))}>
-                        {score.toFixed(1)}
-                      </span>
-                      <div className="order-4 h-1.5 basis-full rounded-full bg-line sm:order-2 sm:basis-auto sm:flex-1">
-                        <div
-                          className="h-full rounded-full bg-punch"
-                          style={{ width: `${Math.max(2, Math.min(100, ((score - 40) / 59) * 100))}%` }}
-                        />
-                      </div>
-                    </div>
+                    <span
+                      key={catKey}
+                      className="inline-flex items-center rounded-lg border border-line bg-sleeve px-3 py-1.5 text-[13px] font-semibold text-ink"
+                    >
+                      {catDef?.label ?? catKey}
+                    </span>
                   );
                 })}
-              </div>
-
-              <div className="mt-4 border-t border-line pt-3">
-                <p className="text-[12px] leading-relaxed text-mist">
-                  Active traits meet or exceed the category midpoint threshold (
-                  <strong className="tnum font-semibold text-ink">{breakdown.archetype.threshold.toFixed(1)}</strong>
-                  ) across all 5 intrinsic skill dimensions.
-                </p>
               </div>
             </Panel>
           </div>
