@@ -225,6 +225,93 @@ export function roleScore(cats: Record<CategoryKey, number>, roleId: string, cfg
   );
 }
 
+export interface ArchetypeDef {
+  title: string;
+  description: string;
+}
+
+export interface ArchetypeResult {
+  key: string;
+  title: string;
+  description: string;
+  threshold: number;
+  activeCategories: CategoryKey[];
+}
+
+export const ARCHETYPES: Record<string, ArchetypeDef> = {
+  // Lapisan 1: Spesialis Murni (1 Sumbu Aktif — 5 Tipe)
+  "vocal": { title: "The Vocal Maestro", description: "Penguasa teknik suara murni" },
+  "rap": { title: "The Wordsmith", description: "Penenun rima, tempo, dan lirik" },
+  "dance": { title: "The Dance Dynamo", description: "Penari murni berenergi kinetik tinggi" },
+  "stage": { title: "The Stage Commander", description: "Pengendali formasi dan pusat gravitasi panggung" },
+  "visual": { title: "The Visual Muse", description: "Inspirasi estetika visual dan pesona kamera" },
+
+  // Lapisan 2: Dua Keahlian / Dual Focus (2 Sumbu Aktif — 10 Tipe)
+  "vocal+rap": { title: "The Melodic Rapper", description: "Keahlian berimbang antara menyanyi merdu dan melantunkan rap" },
+  "vocal+dance": { title: "The Stage Engine", description: "Motor penggerak penampilan langsung yang stabil" },
+  "vocal+stage": { title: "The Vocal Anchor", description: "Pondasi suara utama dengan karisma panggung dominan" },
+  "vocal+visual": { title: "The Visual Siren", description: "Penyanyi dengan daya pikat vokal dan visual menawan" },
+  "rap+dance": { title: "The Rhythm Striker", description: "Penyerang ritme cepat lewat tarian tajam dan rap" },
+  "rap+stage": { title: "The Stage Disruptor", description: "Rapper yang mendominasi dan menggebrak suasana panggung" },
+  "rap+visual": { title: "The Trendsetter", description: "Rapper berpenampilan khas yang memimpin gaya dan tren grup" },
+  "dance+stage": { title: "The Pacesetter", description: "Penari berenergi tinggi yang mengatur tempo panggung seluruh grup" },
+  "dance+visual": { title: "The Graceful Performer", description: "Penari dengan ekspresi panggung dan estetika gerak yang memikat" },
+  "stage+visual": { title: "The Centerpiece", description: "Pusat perhatian visual dan karisma yang menjadi representasi panggung" },
+
+  // Lapisan 3: Tiga Keahlian / Triple Threat (3 Sumbu Aktif — 10 Tipe)
+  "vocal+rap+dance": { title: "The Powerhouse", description: "Segitiga kemampuan teknis musikal dan koreografi murni" },
+  "vocal+rap+stage": { title: "The Frontline Virtuoso", description: "Musisi panggung lengkap di garis depan" },
+  "vocal+rap+visual": { title: "The Melodic Icon", description: "Musisi vokal-rap dengan representasi citra visual kuat" },
+  "vocal+dance+stage": { title: "The Showstopper", description: "Pencuri perhatian utama panggung lewat lagu, koreo, dan aksi panggung" },
+  "vocal+dance+visual": { title: "The Radiant Showman", description: "Paket penampil klasik dengan vokal prima, tari, dan visual" },
+  "vocal+stage+visual": { title: "The Headliner", description: "Nama utama yang memimpin sorotan lewat suara, aura visual, dan karisma" },
+  "rap+dance+stage": { title: "The Crowd Igniter", description: "Pemicu antusiasme penonton lewat rap, koreo agresif, dan kontrol panggung" },
+  "rap+dance+visual": { title: "The Stage Maverick", description: "Penampil berkarakter bebas dengan rap, koreo tajam, dan gaya khas" },
+  "rap+stage+visual": { title: "The Frontman", description: "Juru bicara dan wajah utama panggung bergenre ritmis" },
+  "dance+stage+visual": { title: "The Stage Sensation", description: "Koreografi, karisma, dan visual spektakuler di panggung" },
+
+  // Lapisan 4: Empat Keahlian / Quad Focus (4 Sumbu Aktif — 5 Tipe)
+  "vocal+rap+dance+visual": { title: "The Technical Prodigy", description: "Berbakat luar biasa di empat lini teknis dan visual tanpa dominasi kontrol panggung" },
+  "vocal+rap+dance+stage": { title: "The Stage Vanguard", description: "Garda terdepan performa panggung dengan kemampuan teknis dan karisma mutlak" },
+  "vocal+rap+stage+visual": { title: "The Luminary", description: "Tokoh panggung yang bersinar lewat suara, lirik, visual, dan karisma" },
+  "vocal+dance+stage+visual": { title: "The Protagonist", description: "Sosok sentral ala tokoh utama idol: vokal, tari, aura panggung, dan visual" },
+  "rap+dance+stage+visual": { title: "The Trailblazer", description: "Pembuka jalan panggung berenergi ritmis, koreo tajam, dan pesona visual" },
+
+  // Lapisan 5: Sempurna / All Pillars (5 Sumbu Aktif — 1 Tipe)
+  "vocal+rap+dance+stage+visual": { title: "The All-Rounder", description: "Penguasa seluruh lima dimensi atribut kemampuan idol" },
+};
+
+/** Compute 5-axis midrange archetype trait from parent category scores */
+export function computeArchetype(cats: Record<CategoryKey, number>): ArchetypeResult {
+  const catKeys = CATEGORIES.map((c) => c.key);
+  for (const k of catKeys) {
+    if (typeof cats[k] !== "number" || !Number.isFinite(cats[k])) {
+      throw new Error(`Invalid category score for archetype calculation: ${k}`);
+    }
+  }
+
+  const scores = catKeys.map((k) => cats[k]);
+  const max = Math.max(...scores);
+  const min = Math.min(...scores);
+  const threshold = (max + min) / 2;
+
+  const activeCategories = catKeys.filter((k) => cats[k] >= threshold);
+  const key = activeCategories.join("+");
+
+  const def = ARCHETYPES[key];
+  if (!def) {
+    throw new Error(`Unknown archetype key: ${key}`);
+  }
+
+  return {
+    key,
+    title: def.title,
+    description: def.description,
+    threshold,
+    activeCategories,
+  };
+}
+
 export interface OvrBreakdown {
   cats: Record<CategoryKey, number>;
   /** Midrange cutoff (max + min) / 2 across 11 functional roles */
@@ -234,6 +321,8 @@ export interface OvrBreakdown {
   base: number;
   drift: number;
   ovr: number;
+  /** MBTI-style archetype trait computed from 5 parent categories */
+  archetype: ArchetypeResult;
 }
 
 /** Full three-tier calculation based on natural archetype discovery */
@@ -243,6 +332,7 @@ export function computeOvr(idol: Idol, cfg: EngineConfig): OvrBreakdown {
   }
 
   const cats = categoryScores(idol, cfg);
+  const archetype = computeArchetype(cats);
 
   // Tier 2 — Evaluate all 11 functional roles
   const allScored = SCORING_ROLES.map((r) => ({
@@ -278,7 +368,7 @@ export function computeOvr(idol: Idol, cfg: EngineConfig): OvrBreakdown {
   const drift = ((idol.popularity - 50) / 50) * cfg.driftMax;
   const ovr = Math.max(40, Math.min(99, Math.round(base + drift)));
 
-  return { cats, threshold, roleScores, base, drift, ovr };
+  return { cats, threshold, roleScores, base, drift, ovr, archetype };
 }
 
 export const ovrOf = (idol: Idol, cfg: EngineConfig) => computeOvr(idol, cfg).ovr;

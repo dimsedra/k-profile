@@ -6,6 +6,9 @@ import {
   DEFAULT_CONFIG,
   roleScore,
   computeOvr,
+  ARCHETYPES,
+  computeArchetype,
+  CATEGORIES,
   type CategoryKey,
   type Idol,
 } from "./ovr.ts";
@@ -155,5 +158,120 @@ describe("BP-OVR-002: Midrange Archetype Selection & OVR Calculation", () => {
 
     const nanCfg = { ...DEFAULT_CONFIG, roleDecay: NaN };
     assert.throws(() => computeOvr(idol, nanCfg), /Invalid roleDecay in EngineConfig/);
+  });
+});
+
+describe("BP-ARCH-001: 31-Type Archetype Catalog & 5-Axis Midrange Calculation", () => {
+  test("ARCHETYPES defines exactly 31 canonical archetype entries", () => {
+    const keys = Object.keys(ARCHETYPES);
+    assert.equal(keys.length, 31);
+
+    const catKeys = CATEGORIES.map((c) => c.key);
+    for (const k of keys) {
+      const parts = k.split("+") as CategoryKey[];
+      // Must be sorted in canonical order
+      const expectedCanonical = catKeys.filter((c) => parts.includes(c)).join("+");
+      assert.equal(k, expectedCanonical);
+    }
+  });
+
+  test("all 31 archetype titles start with 'The ' and use unique primary nouns", () => {
+    const nouns = [
+      "Maestro", "Wordsmith", "Dynamo", "Commander", "Muse",
+      "Rapper", "Engine", "Anchor", "Siren", "Striker",
+      "Disruptor", "Trendsetter", "Pacesetter", "Performer", "Centerpiece",
+      "Powerhouse", "Virtuoso", "Icon", "Showstopper", "Showman",
+      "Headliner", "Igniter", "Maverick", "Frontman", "Sensation",
+      "Prodigy", "Vanguard", "Luminary", "Protagonist", "Trailblazer",
+      "All-Rounder",
+    ];
+    assert.equal(new Set(nouns).size, 31);
+
+    const titles = Object.values(ARCHETYPES).map((a) => a.title);
+    assert.equal(titles.length, 31);
+    for (const title of titles) {
+      assert.ok(title.startsWith("The "), `Expected "${title}" to start with "The "`);
+    }
+
+    // Each noun should appear in exactly one archetype title
+    for (const noun of nouns) {
+      const matches = titles.filter((t) => t.includes(noun));
+      assert.equal(
+        matches.length,
+        1,
+        `Expected noun "${noun}" to appear in exactly one title, found: ${matches.join(", ")}`
+      );
+    }
+  });
+
+  test("computeArchetype identifies single, dual, triple, quad, and 5-pillar traits", () => {
+    // 1-pillar (Vocal)
+    const single = computeArchetype({ vocal: 90, rap: 50, dance: 50, stage: 50, visual: 50 });
+    assert.equal(single.key, "vocal");
+    assert.equal(single.title, "The Vocal Maestro");
+    assert.equal(single.threshold, 70);
+    assert.deepEqual(single.activeCategories, ["vocal"]);
+
+    // 2-pillar (Vocal + Dance)
+    const dual = computeArchetype({ vocal: 90, rap: 50, dance: 90, stage: 50, visual: 50 });
+    assert.equal(dual.key, "vocal+dance");
+    assert.equal(dual.title, "The Stage Engine");
+    assert.deepEqual(dual.activeCategories, ["vocal", "dance"]);
+
+    // 3-pillar (Vocal + Rap + Stage)
+    const triple = computeArchetype({ vocal: 85, rap: 85, dance: 50, stage: 85, visual: 50 });
+    assert.equal(triple.key, "vocal+rap+stage");
+    assert.equal(triple.title, "The Frontline Virtuoso");
+    assert.deepEqual(triple.activeCategories, ["vocal", "rap", "stage"]);
+
+    // 4-pillar (Vocal + Dance + Stage + Visual - Protagonist)
+    const quad = computeArchetype({ vocal: 92, rap: 50, dance: 90, stage: 88, visual: 95 });
+    assert.equal(quad.key, "vocal+dance+stage+visual");
+    assert.equal(quad.title, "The Protagonist");
+    assert.deepEqual(quad.activeCategories, ["vocal", "dance", "stage", "visual"]);
+
+    // 5-pillar uniform attributes (max === min)
+    const uniform = computeArchetype({ vocal: 75, rap: 75, dance: 75, stage: 75, visual: 75 });
+    assert.equal(uniform.key, "vocal+rap+dance+stage+visual");
+    assert.equal(uniform.title, "The All-Rounder");
+    assert.equal(uniform.threshold, 75);
+    assert.equal(uniform.activeCategories.length, 5);
+  });
+
+  test("computeOvr attaches archetype result into OvrBreakdown", () => {
+    const idol: Idol = {
+      id: 10,
+      stageName: "Ace Idol",
+      group: "K-Stars",
+      gender: "Female",
+      generation: 5,
+      bio: "",
+      popularity: 50,
+      roles: ["mainVocal"],
+      attrs: {
+        "vocal.technique": 95, "vocal.range": 95, "vocal.tone": 95, "vocal.stability": 95,
+        "rap.flow": 50, "rap.speed": 50, "rap.lyricism": 50, "rap.delivery": 50,
+        "dance.precision": 95, "dance.power": 95, "dance.flexibility": 95, "dance.musicality": 95,
+        "stage.charisma": 50, "stage.expression": 50, "stage.engagement": 50, "stage.energy": 50,
+        "visual.harmony": 50, "visual.aura": 50, "visual.styling": 50, "visual.camera": 50,
+      },
+      customFields: [],
+    };
+    const breakdown = computeOvr(idol, DEFAULT_CONFIG);
+    assert.ok(breakdown.archetype);
+    assert.equal(breakdown.archetype.key, "vocal+dance");
+    assert.equal(breakdown.archetype.title, "The Stage Engine");
+  });
+
+  test("computeArchetype fails fast on invalid or missing category values", () => {
+    assert.throws(
+      () => computeArchetype({ vocal: NaN, rap: 70, dance: 70, stage: 70, visual: 70 }),
+      /Invalid category score for archetype calculation: vocal/
+    );
+    assert.throws(
+      // @ts-expect-error testing missing property
+      () => computeArchetype({ rap: 70, dance: 70, stage: 70, visual: 70 }),
+      /Invalid category score for archetype calculation: vocal/
+    );
   });
 });
